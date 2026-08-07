@@ -1894,8 +1894,12 @@ export async function requestHandler(req, res) {
   return serveFile(req, res)
 }
 
-// 本地直跑：node server.mjs（Vercel 云端不 listen，由平台调用 requestHandler）
-if (process.env.VERCEL !== '1') {
+// 本地直跑：node server.mjs（Vercel / Netlify 云端不 listen，由平台调用 requestHandler）
+const isServerless =
+  process.env.VERCEL === '1' ||
+  process.env.NETLIFY === 'true' ||
+  !!process.env.AWS_LAMBDA_FUNCTION_NAME
+if (!isServerless) {
   createServer(requestHandler).listen(port, '127.0.0.1', () => {
     console.log('牡丹亭 Agent: http://127.0.0.1:' + port)
     console.log(apiKey ? '语义路径: DeepSeek (' + model + ')' : '语义路径: 本地规则兜底（未设置 DEEPSEEK_API_KEY）')
