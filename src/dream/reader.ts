@@ -1,9 +1,11 @@
-﻿/**
+/**
  * 翻阅式 AI 阅读《牡丹亭·惊梦》两回五页
  *   每页 = 引言 + 3-4 句诗句 + 今译 + 点拨
  *   划过即读过，停留 AI 回应，翻页 AI 观察。
  *   场景字段 scene 驱动背景切换（起/承/转/合）：春朝 → 庭园 → 暮色 → 入梦 → 梦醒
  */
+
+import { assetUrl } from './assetBase'
 
 export interface BookPage {
   id: string
@@ -11,6 +13,9 @@ export interface BookPage {
   chapter: string        // 第一回 / 第二回
   chapterTitle: string   // 游园 / 惊梦
   qupai?: string         // 昆曲曲牌名（唱词依曲牌而填）：游园〔皂罗袍〕〔好姐姐〕，惊梦〔山桃红〕
+  act: string            // 幕名（初见春色 / 看见自己 / 惜春 / 入梦 / 梦醒）——剧情锚点
+  stageNote: string      // 场记·时间地点（午后·杜府后园 / 夜·梦中 …）
+  stageLine: string      // 场记·一句剧情（她第一次真正看见春天。）
   scene: 'spring' | 'garden' | 'dusk' | 'dream' | 'wake'  // 纸面色温（起承转合）
   dream?: boolean        // 惊梦页：梦里柳生以原文应你所停之字
   image?: string         // 剧情高潮处才浮现的场景画（平时是干净纸面，不凑数）
@@ -29,11 +34,13 @@ export const BOOK: BookPage[] = [
     chapter: '第一回',
     chapterTitle: '游园',
     qupai: '皂罗袍',
+    act: '初见春色',
+    stageNote: '午后 · 杜府后园',
+    stageLine: '她第一次真正看见春天。',
     scene: 'spring',
     // 点一个字替她带走后，满园春色才成画——游园场景图浮现
-    image: '/assets/mudanting-scene-garden.webp',
+    image: assetUrl('mudanting-scene-garden.webp'),
     imageOnGrant: true,
-    epigraph: '南安太守杜宝之女，年十六，被父亲关在深闺里读书，从未到过自家后园。这一日春色正好，她瞒着父亲，第一次踏进了那座园子。',
     lines: ['原来姹紫嫣红开遍', '似这般都付与断井颓垣', '良辰美景奈何天', '赏心乐事谁家院'],
     vernacularLines: [
       '原来繁盛的花，开满了整个园子',
@@ -50,6 +57,9 @@ export const BOOK: BookPage[] = [
     chapter: '第一回',
     chapterTitle: '游园',
     qupai: '皂罗袍',
+    act: '看见自己',
+    stageNote: '日色渐深',
+    stageLine: '她忽然发现，「锦屏人」说的正是自己。',
     scene: 'garden',
     // 她送你一个字（锦屏人），你收下后，正午庭园画面浮现
     image: '/assets/mudanting-scene-noon.webp',
@@ -69,6 +79,9 @@ export const BOOK: BookPage[] = [
     chapter: '第一回',
     chapterTitle: '游园',
     qupai: '好姐姐',
+    act: '惜春',
+    stageNote: '暮色将合',
+    stageLine: '春色越盛，她越意识到它终究会过去。',
     scene: 'dusk',
     // 你按住牡丹留住春后，暮色画面浮现
     image: '/assets/mudanting-scene-dusk.webp',
@@ -89,6 +102,9 @@ export const BOOK: BookPage[] = [
     chapter: '第二回',
     chapterTitle: '惊梦',
     qupai: '山桃红',
+    act: '入梦',
+    stageNote: '夜 · 梦中',
+    stageLine: '她睡去了。一个素未谋面的书生走进她的梦。',
     scene: 'dream',
     dream: true,
     // 全篇唯一一张场景画：入梦那一刻，满园春色变成有图可看的梦
@@ -108,10 +124,13 @@ export const BOOK: BookPage[] = [
     chapter: '第二回',
     chapterTitle: '惊梦',
     qupai: '山桃红',
+    act: '梦醒',
+    stageNote: '天将明',
+    stageLine: '梦散了，可有些东西已经无法跟着梦一起消失。',
     scene: 'wake',
     dream: true,
     // 点一个字作纪念带走后，梦醒画面浮现
-    image: '/assets/mudanting-scene-wake.webp',
+    image: assetUrl('mudanting-scene-wake.webp'),
     imageOnGrant: true,
     lines: ['睡荼蘼抓住裙衩线', '恰便是花似人心向好处牵', '早难道好处相逢无一言'],
     vernacularLines: [
@@ -191,14 +210,14 @@ export const GATE_TASKS: Record<string, GateTask> = {
     replyTarget: '你替她按住了一刻。春还是要走的，可有人这样留过它，便不算白开。',
     replyOther: '不是这朵。你替我按住那占不得先的牡丹——按住它，别放手。',
   },
-  // 转·入梦：停留即缘——梦里的字，柳生都接住
+  // 转·入梦：停留即缘——梦里的字，柳生都接住（一次深停，梦便成了）
   p4: {
-    ask: '梦里，你停住的字，他都接得住。停过十个字，这一梦便成了。',
-    hint: '在梦里再停几个字，柳生会接住你',
+    ask: '梦里，你停住的字，他都接得住。停一处，这一梦便成了。',
+    hint: '在梦里停一个字，柳生会接住你',
     mode: 'dwell',
-    dwellNeed: 10,
-    replyTarget: '梦成了。你停过的那十个字，他都听见了。',
-    replyOther: '还差几处——你停过的字，他都记着。再停几处，梦便成了。',
+    dwellNeed: 1,
+    replyTarget: '梦成了。你停过的字，他都听见了。',
+    replyOther: '再停一处，梦便成了。',
   },
   // 合·梦醒：纪念——点一个字带走，随即收束
   p5: {

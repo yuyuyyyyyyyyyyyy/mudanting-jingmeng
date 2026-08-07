@@ -16,6 +16,9 @@ export interface DwellEvidence {
   scores: { spring: number; ruin: number; self: number }
 }
 
+// basedOn 安全校验：必须是单个非标点、非空白、非问号的字符
+const PUNCT_SAFE = /[\u3000-\u303F\uff00-\uffef\u2000-\u206f，。、！？；：""''「」\s\?？]/
+
 // 本地兜底：每个字一句人话（人工撰写，不依赖 AI）
 const LOCAL_FALLBACK: Record<string, string> = {
   原: '原来姹紫嫣红，都是真的。',
@@ -236,10 +239,14 @@ export async function callInnerVoice(input: {
     if (input.dialogue && !isDialogueParagraph(data.voice)) {
       return { voice: localFallback, phase: input.phase, source: 'local', basedOn: input.char }
     }
-    // Agent·Act 校验：basedOn 必须在读者路径或当前字中，否则退回当前字
+    // Agent·Act 校验：basedOn 必须在读者路径或当前字中；并且必须是单个合法汉字/字符，否则退回当前字
     const validChars = new Set(input.evidence.dwellPath.map(d => d.char))
     validChars.add(input.char)
-    const basedOn = data.basedOn && validChars.has(data.basedOn) ? data.basedOn : input.char
+    let basedOn = data.basedOn && validChars.has(data.basedOn) ? data.basedOn : input.char
+    // 额外防御：空值/问号/多字符/空白符一律退回当前字（防 basedOn:"?" 这种服务端路径漏校验）
+    if (!basedOn || basedOn.length !== 1 || basedOn === '?' || /\s/.test(basedOn) || PUNCT_SAFE.test(basedOn)) {
+      basedOn = input.char
+    }
     return {
       voice: data.voice,
       phase: data.phase || input.phase,

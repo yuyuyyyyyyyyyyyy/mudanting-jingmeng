@@ -154,13 +154,19 @@
 .scene-image {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: var(--scene-opacity, 0.5);
-  animation: sceneIn 2.2s ease both;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;                     /* 就绪前不可见，杜绝“一点一点/突然蹦出” */
   transition: opacity 1.4s ease;
   pointer-events: none;
+}
+/* onLoad 后才淡入：图片已完整解码，动画即真实浮现 */
+.scene-image.loaded {
+  opacity: var(--scene-opacity, 0.5);
+  animation: sceneIn 2.2s ease both;
 }
 .reader-scene--dream { --scene-opacity: 0.55; }
 /* 春朝 / 庭园 / 暮色 / 梦醒：各自过关后浮现的场景画——比入梦稍亮，图上纸色光晕托住正文 */
@@ -463,6 +469,44 @@
   100% { opacity: 1; }
 }
 
+/* ----- 场记：时间·地点 + 一句剧情锚点（页头第二层，极淡） ----- */
+.reader-stagenote {
+  text-align: center;
+  margin: -0.8rem auto 1.8rem;
+  opacity: 0;
+  animation: readerFade 1.6s ease 0.25s forwards;
+}
+.reader-stagenote-where {
+  display: block;
+  font-size: 0.64rem;
+  color: var(--indigo, #66768B);
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  font-weight: 300;
+  opacity: 0.82;
+}
+.reader-stagenote-line {
+  display: block;
+  margin-top: 0.55em;
+  font-size: 0.74rem;
+  color: rgba(60, 50, 45, 0.5);
+  letter-spacing: 0.08em;
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.7;
+}
+/* 第二回·惊梦：场景图压暗纸面，场记加强可读 */
+.reader-scene--dream .reader-stagenote-where,
+.reader-scene--wake .reader-stagenote-where {
+  color: rgba(247, 243, 234, 0.88);
+  text-shadow: 0 0 12px rgba(247, 243, 234, 0.7);
+}
+.reader-scene--dream .reader-stagenote-line,
+.reader-scene--wake .reader-stagenote-line {
+  color: rgba(247, 243, 234, 0.72);
+  text-shadow: 0 0 10px rgba(28, 26, 23, 0.5);
+}
+
 /* ----- 回目页（章回体）：与开始页大标题一致的字距与字号 ----- */
 .reader-chapterpage {
   text-align: center;
@@ -698,39 +742,54 @@
 .reader-turn-btn {
   background: transparent;
   border: 0;
-  border-bottom: 1px dashed rgba(39, 35, 31, 0.22);
-  color: rgba(60, 50, 45, 0.55);
+  border-bottom: 1px solid rgba(39, 35, 31, 0.3);
+  color: rgba(60, 50, 45, 0.82);
   font-family: inherit;
-  font-size: 0.8rem;
-  letter-spacing: 0.22em;
+  font-size: 0.86rem;
+  letter-spacing: 0.2em;
   cursor: pointer;
-  padding: 0 0 0.25em;
-  transition: color 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
+  padding: 0 0 0.3em;
+  transition: color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
 }
-.reader-turn-btn:hover:not(:disabled) {
+.reader-turn-btn:hover {
   color: var(--rouge, #A65D68);
-  border-bottom-color: rgba(166, 93, 104, 0.5);
-}
-.reader-turn-btn:disabled {
-  opacity: 0.25;
-  cursor: default;
+  border-bottom-color: var(--rouge, #A65D68);
+  transform: translateX(2px);
 }
 .reader-turn-btn--prev {
   font-size: 1.2rem;
   border: 0;
   padding: 0 0.35em;
   letter-spacing: 0;
+  color: rgba(60, 50, 45, 0.5);
 }
-/* 她把门：她应允后就绪——题签由虚线转实，胭脂点亮，轻轻呼吸提示可走 */
-.reader-turn-btn--ready {
+.reader-turn-btn--prev:hover {
   color: var(--rouge, #A65D68);
-  border-bottom-color: rgba(166, 93, 104, 0.5);
-  border-bottom-style: solid;
-  animation: turnReadyPulse 2.2s ease-in-out infinite;
+  transform: translateX(-2px);
 }
-@keyframes turnReadyPulse {
-  0%, 100% { opacity: 0.7; }
-  50%      { opacity: 1; }
+/* 下一幕：始终可见、始终可走——错过就不能继续的信息，绝不能淡 */
+.reader-turn-btn--alive {
+  color: rgba(60, 50, 45, 0.88);
+  border-bottom: 1px solid rgba(166, 93, 104, 0.6);
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+}
+.reader-turn-btn--alive:hover {
+  color: var(--rouge, #A65D68);
+  border-bottom-color: var(--rouge, #A65D68);
+}
+/* 惊梦页：场景图压暗纸面，翻页入口提亮可读 */
+.reader-scene--dream .reader-turn-btn--alive,
+.reader-scene--wake .reader-turn-btn--alive {
+  color: rgba(247, 243, 234, 0.92);
+  border-bottom-color: rgba(166, 93, 104, 0.75);
+  text-shadow: 0 0 12px rgba(28, 26, 23, 0.6);
+}
+.reader-scene--dream .reader-turn-btn--alive:hover,
+.reader-scene--wake .reader-turn-btn--alive:hover {
+  color: rgba(247, 243, 234, 1);
+  border-bottom-color: rgba(247, 243, 234, 0.9);
 }
 /* ----- 入场引导卡（第一回保持原样：与 AI 面板同左对齐，内容完整显示） ----- */
 .dream-intro {
@@ -767,6 +826,14 @@
   color: var(--ink-faint, #A79F92);
   margin-top: 0.2em;
   letter-spacing: 0.28em;
+}
+/* 我的权限：比其余引导行稍重一点，是这张卡唯一要读者记住的事 */
+.intro-line-permission {
+  margin-top: 0.4em;
+  color: rgba(60, 50, 45, 0.72);
+  letter-spacing: 0.12em;
+  border-left: 2px solid rgba(166, 93, 104, 0.32);
+  padding-left: 0.7em;
 }
 .intro-kunqu {
   margin-top: 0.9em;

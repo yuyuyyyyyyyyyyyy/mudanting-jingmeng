@@ -20,6 +20,16 @@ import './reader.css'
 const DWELL_1 = 500    // 初触：轻停 0.5s 即说话（原 1000，用户要求更快出效果）
 const DWELL_2 = 1800   // 深驻：累计 1.8s（原 4000）
 const PUNCT = /[\s，。、！？；：""''「」]/
+// 幕号中文数字（第一幕 / 第二幕 …）——页头剧情锚点
+const ACT_NUM = ['一', '二', '三', '四', '五']
+// basedOn 最终兜底：服务端/客户端任何路径漏出 ? 或多字符，一律退回当前停的字
+function safeBasedOn(got: string | undefined | null, fallback: string): string {
+  if (!got) return fallback
+  if (got.length !== 1) return fallback
+  if (PUNCT.test(got)) return fallback
+  if (got === '?') return fallback
+  return got
+}
 
 // 离线/失败兜底：她绝不冷场——本地也有一句人话接住你
 const LOCAL_CHAT_REPLIES = [
@@ -110,6 +120,34 @@ function phaseOf(dwellHistory: { pageId: string }[]): string {
   return dwellHistory.some(d => isDreamPage(d.pageId)) ? '惊梦' : '游园'
 }
 
+// 柳生原文候选的倾向性：每句回应对应《惊梦》里一种读者视角
+//   spring："如花美眷"——被春色吸引的人，先看见美
+//   ruin："在幽闺自怜"——被断井颓垣/韶光贱 打中，先看见困
+//   self："是那处曾相见"——反复停在锦屏人/谁/自家身上，先看见"我是谁"
+const LIU_BIAS: Record<string, CharBias[]> = {
+  e2: ['spring'],                         // 则为你如花美眷，似水流年
+  e4: ['self', 'ruin'],                   // 是那处曾相见，相看俨然
+  e5: ['spring'],                         // 雨香云片，才到梦儿边
+  e8: ['ruin', 'self'],                   // 蓦地游蜂搅翠烟，荡子来消渴
+}
+function rankLiuCandidatesByEvidence(
+  pool: typeof LIU_CANDIDATES,
+  scores: { spring: number; ruin: number; self: number }
+) {
+  const total = scores.spring + scores.ruin + scores.self
+  if (total === 0) return pool // 前 3 页没停过任何字 → 不重新排，保持人工审校顺序
+  // 每句候选按命中 bias 加权，乘以该 bias 的全局得分
+  const weighted = pool.map(c => {
+    const bs = LIU_BIAS[c.id] || []
+    const score = bs.reduce((acc, b) => acc + (scores[b] || 0), 0)
+    // 随机抖动 ±10%：同一读者多次停留不会固定是同一句先出
+    return { c, score: score * (0.9 + Math.random() * 0.2) }
+  })
+  // 降序：最高分先出；全 0（没命中任何 bias）保持原序相对不变
+  weighted.sort((a, b) => b.score - a.score)
+  return weighted.map(w => w.c)
+}
+
 interface GardenReaderProps {
   onReenter: () => void
   soundOn: boolean
@@ -118,6 +156,21 @@ interface GardenReaderProps {
   onSoundToggle: () => void
   onMotionToggle: () => void
   onVernacularToggle: () => void
+}
+
+// 场景画：<img> + onLoad 门控——完整解码前 opacity 0，就绪才淡入。
+// 独立子组件：父层用 key={src} 重挂载，换页时状态天然归零，无“先亮后隐”闪烁。
+function SceneImage({ src }: { src: string }) {
+  const [loaded, setLoaded] = useState(false)
+  return (
+    <img
+      className={`scene-image ${loaded ? 'loaded' : ''}`}
+      src={src}
+      alt=""
+      aria-hidden="true"
+      onLoad={() => setLoaded(true)}
+    />
+  )
 }
 
 export default function GardenReader({ onReenter, soundOn, motionOn, vernacularOn, onSoundToggle, onMotionToggle, onVernacularToggle }: GardenReaderProps) {
@@ -221,6 +274,32 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
     resumeAudio()
     startMelodyLoop(BOOK[pageIdx].scene)
     return () => stopMelodyLoop()
+  }, [pageIdx])
+
+  // P5 梦醒：Finale 不再藏在 Gate 之后——进这一页之后（读过任一字 或 停留过任意一处 或 8s 过去）就收束。
+  // 带字（p5 Gate 的 keep）作为互动彩蛋：认真完成的人结尾里会有她记下的那个字；没做的人也会看到基础收束。
+  const finaleAutoTimerRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (pageIdx !== BOOK.length - 1) {
+      if (finaleAutoTimerRef.current) { window.clearTimeout(finaleAutoTimerRef.current); finaleAutoTimerRef.current = null }
+      return
+    }
+    // 二档触发：有任何停留（≥DWELL_1）就立刻收束，否则 8s 兜底
+    const checkEarly = () => {
+      if (finaleDoneRef.current) return
+      if (countDwelledOnPage(BOOK[BOOK.length - 1].id) >= 1) { scheduleFinale(); return }
+      finaleAutoTimerRef.current = window.setTimeout(checkEarly, 1500)
+    }
+    finaleAutoTimerRef.current = window.setTimeout(checkEarly, 1500)
+    const fallback = window.setTimeout(() => {
+      if (finaleDoneRef.current) return
+      scheduleFinale()
+    }, 8000)
+    return () => {
+      if (finaleAutoTimerRef.current) window.clearTimeout(finaleAutoTimerRef.current)
+      window.clearTimeout(fallback)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIdx])
 
   // 预载全部场景画（后台下载，不抢主线程）：点字浮现/翻页切景时从缓存秒显，
@@ -384,6 +463,9 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
       const turnId = ++dreamTurnRef.current
       let pool = LIU_CANDIDATES.filter(c => !playedEchoIdsRef.current.has(c.id))
       if (!pool.length) { playedEchoIdsRef.current.clear(); pool = LIU_CANDIDATES }
+      // Agent·Plan（最小闭环）：P1–P3 的 spring/ruin/self 停留证据决定柳生先打开哪一面
+      // 原则：用户停过什么，先向他呈现什么——不是"AI判断人格"，而是"你一路怎么读，同样的惊梦先向你打开不同的一面"
+      pool = rankLiuCandidatesByEvidence(pool, deriveEvidence().scores)
       const [w, result] = await Promise.all([
         callWhisper(ch, pageId, pool),
         callInnerVoice({
@@ -419,7 +501,7 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
       } else {
         // 深驻 = 双声：柳生青墨浮上方，她胭脂落字下，同轮成对
         setDreamRespond({ text: target.targetText, relation: w?.relation || '缘', ts: Date.now() })
-        setVoice({ text: result.voice, char: result.basedOn || ch, ts: Date.now(), level: 2, x: h.x, y: h.y })
+        setVoice({ text: result.voice, char: safeBasedOn(result.basedOn, ch), ts: Date.now(), level: 2, x: h.x, y: h.y })
       }
       return
     }
@@ -449,7 +531,7 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
     } else {
       // 停留 = 短句：进右下的相识簿（她记住的话），不与对话混
       setDialog(prev => [...prev, {
-        char: result.basedOn || ch,
+        char: safeBasedOn(result.basedOn, ch),
         voice: result.voice,
         ts: Date.now(),
         milestone: isMilestone,
@@ -563,9 +645,10 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
 
   // ---- 她把门：读尽一页 → 她开口（观察本页读法 + 预告下一幕 + 应允） ----
   async function fireGateNote(page: BookPage) {
+    const startIdx = pageIdxRef.current
     const dwelled = collectPageDwelled(page.id)
     lastPageDwelledRef.current = dwelled
-    const next = BOOK[pageIdx + 1]
+    const next = BOOK[startIdx + 1]
     const note = await (async () => {
       try {
         const resp = await fetch('/api/page-note', {
@@ -589,6 +672,8 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
         return localPageNote(dwelled, next)
       }
     })()
+    // 翻页始终开放：若她话未说完读者已翻走，旧页的 gate 状态不再落到新页上
+    if (pageIdxRef.current !== startIdx) return
     if (!note) { setGate('granted'); return }
     setChatMsgs(prev => [...prev, { role: 'her' as const, text: note, ts: Date.now() }].slice(-40))
     // 她说完观察与预告，接着给一个"任务"——你在这一页里点一个字给她，才算过关
@@ -762,7 +847,8 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
     }
   }
 
-  // 她把门：本页读尽 → 她开口给任务；你点字应过她，翻页才解锁
+  // 她把门：读尽一页 → 她开口给任务（不再锁翻页，只作情境丰富）
+  // 翻页始终开放：不认真读的人也能往下走；认真读的人，她会多说一句、给一次取舍。
   useEffect(() => {
     const page = BOOK[pageIdx]
     if (!pageCompleteFor(page.id)) { setGate('locked'); return }
@@ -782,9 +868,7 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
 
   function goNext() {
     if (pageIdx >= BOOK.length - 1) return
-    const page = pageById(BOOK[pageIdx].id)
-    if (!pageCompleteFor(page.id)) return
-    if (gate !== 'granted') return  // 她未应允，不许翻页
+    // 翻页始终开放：划了多少、停了哪里，只影响她后续如何回应，不影响能不能往下读
     // 翻页：作废在途心声、收起旧心声与柳生应答、清掉本页墨渍
     clearTimers()
     clearAutoGate()
@@ -934,9 +1018,10 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
   return (
     <div className={`dream-scene reader-scene reader-scene--${scene} ${finale ? 'dream-scene--finale' : ''}`}>
       {/* 背景：纸面（色温随幕变化）；剧情高潮处（惊梦）才浮现场景画；
-          imageOnGrant 页：她给了门，你点一个字替她带走——画面才随她的话浮现 */}
+          imageOnGrant 页：她给了门，你点一个字替她带走——画面才随她的话浮现
+          <img> + onLoad：图片完整解码前 opacity 0，就绪后才淡入，杜绝“一点一点/蹦出来” */}
       {page.image && (!page.imageOnGrant || gate === 'granted') && (
-        <div key={page.image} className="scene-image" style={{ backgroundImage: `url(${page.image})` }} aria-hidden="true" />
+        <SceneImage key={page.image} src={page.image} />
       )}
       <div className="scene-canvas" />
       <div className="ink-pool" />
@@ -955,23 +1040,18 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
         <button onClick={onMotionToggle} className={motionOn ? 'on' : ''} title="动效" aria-label="动效">动</button>
       </div>
 
-      {/* 入场引导卡（第一回保持原样：划过/停驻/翻页 + 昆曲小识） */}
+      {/* 入场情境卡：只讲人物处境 + 你的权限 + 往下读——规则留给她边读边发现 */}
       {introOn && (
         <div className="dream-intro" onClick={() => setIntroOn(false)}>
-          <div className="intro-title">《牡丹亭·惊梦》· 两回</div>
-          <div className="intro-line">划过 = 读过；停在一个字上，她说一句心里的话</div>
-          <div className="intro-line">点一个字，她抬起头与你说话——在左下角可以顺着聊</div>
-          <div className="intro-line">读尽一页，她才许你翻过去——但每一幕的过关都不同</div>
-          <div className="intro-kunqu">
-            <span className="intro-kunqu-tag">昆曲小识</span>
-            <p>一折戏唱的是曲牌：〔皂罗袍〕〔好姐姐〕〔山桃红〕——唱词依曲牌而填；划过是过门，停留是板上重音，你停下的地方就是她开口唱的地方。</p>
-            <p>每一幕的过关都不同：带走一个字、收她送的字、按住牡丹、在梦里停留；你停过的字会跟着你走，曲终她会停下来，问你压了一路的那句话。</p>
-          </div>
-          <div className="intro-line intro-line-soft">你若有话，也可以在左下角对她说</div>
+          <div className="intro-title">《牡丹亭 · 惊梦》</div>
+          <p className="intro-line">杜丽娘十六岁，一直生活在深闺。</p>
+          <p className="intro-line">今天，她第一次偷偷走进自家的后花园。</p>
+          <p className="intro-line intro-line-permission">你在戏外看她。情节不会因你改变——但她会记得，你在哪里停下来。</p>
+          <p className="intro-line intro-line-soft">往下读就好。</p>
         </div>
       )}
 
-      {/* 一页一页读：扫完这一页的字，方可翻下一页 */}
+      {/* 一页一页读：随时可往下翻，她只在你看进去了的时候才说话 */}
       <main
         ref={stageRef}
         className="reader-stage"
@@ -985,10 +1065,13 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
             <div key={page.id} className="reader-page reader-page--in">
               <div className="reader-chapter">
                 <span className="reader-chapter-dot" />
-                {/* 第一回保留「第X回」；第二回去掉回号——剧情才重要，视觉留给惊梦页 */}
                 <span className="reader-chapter-label">
-                  {page.chapter === '第二回' ? '' : `${page.chapter} · `}{page.chapterTitle}{page.qupai ? ` ·〔${page.qupai}〕` : ''}
+                  第{ACT_NUM[pageIdx]}幕 · {page.act}　{pageIdx + 1} / {BOOK.length}
                 </span>
+              </div>
+              <div className="reader-stagenote">
+                <span className="reader-stagenote-where">{page.stageNote}</span>
+                <span className="reader-stagenote-line">{page.stageLine}</span>
               </div>
               {/* 男声（柳生）· 文档流槽位：章节头与正文之间，自然占位不压正文 */}
               {BOOK[pageIdx].dream && (
@@ -1006,8 +1089,6 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
               )}
               {page.epigraph && <p className="reader-epigraph">{page.epigraph}</p>}
               {page.lines.map((line, li) => {
-                // 读完整句，今译才浮现（学进去：读一句，译一句）
-                const lineComplete = line.split('').every((ch, ci) => PUNCT.test(ch) || readSetRef.current.has(keyOf(page.id, li, ci)))
                 return (
                   <div key={`${page.id}-${li}`} className="reader-line-block">
                     <div className="reader-line">
@@ -1029,7 +1110,7 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
                         )
                       })}
                     </div>
-                    {vernacularOn && lineComplete && page.vernacularLines[li] && (
+                    {vernacularOn && page.vernacularLines[li] && (
                       <div className="reader-line-vernacular">
                         <span className="vernacular-label">今译</span>
                         {page.vernacularLines[li]}
@@ -1078,27 +1159,19 @@ export default function GardenReader({ onReenter, soundOn, motionOn, vernacularO
                   )}
                 </div>
               )}
-                            {/* 翻页门槛：读尽此页 + 她应允，方可续行 */}
+              {/* 翻页：始终可见、始终可走——错过也不能继续的信息，绝不能淡 */}
               <div className="reader-turn">
                 {pageIdx > 0 && (
-                  <button className="reader-turn-btn reader-turn-btn--prev" onClick={goPrev} title="上一页" aria-label="上一页">‹</button>
+                  <button className="reader-turn-btn reader-turn-btn--prev" onClick={goPrev} title="上一幕" aria-label="上一幕">‹</button>
                 )}
                 {pageIdx < BOOK.length - 1 && (
                   <button
-                    className={`reader-turn-btn ${complete && gate === 'granted' ? 'reader-turn-btn--ready' : ''}`}
+                    className="reader-turn-btn reader-turn-btn--alive"
                     onClick={goNext}
-                    disabled={!complete || gate !== 'granted'}
-                    title={!complete ? '把这一页的字都划过，她才许你往下走' : gate === 'speaking' ? '她正有话要对你说' : gate === 'asking' ? '答她一句，她才许你过去' : '她应允了，随她往下一幕去'}
-                    aria-label="下一页"
+                    title={`下一幕 · ${BOOK[pageIdx + 1].act}`}
+                    aria-label={`下一幕 · ${BOOK[pageIdx + 1].act}`}
                   >
-                    {!complete ? '读尽此页，方可续行'
-                      : gate === 'speaking' ? '她要开口了…'
-                      : gate === 'asking' ? (GATE_TASKS[page.id]?.mode === 'hold' ? '按住那朵牡丹，方可续行'
-                          : GATE_TASKS[page.id]?.mode === 'dwell' ? '在梦里再停一处'
-                          : GATE_TASKS[page.id]?.mode === 'gift' ? '收下她送你的字，方可续行'
-                          : GATE_TASKS[page.id]?.mode === 'tradeoff' ? '带走一个字，方可续行'
-                          : '答她一句，方可续行')
-                      : '她应允了 · 随她往深处走'}
+                    下一幕 · {BOOK[pageIdx + 1].act} →
                   </button>
                 )}
               </div>

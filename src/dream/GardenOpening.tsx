@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { resumeAudio, setEnabled, startMelodyLoop, stopMelodyLoop } from './dreamSound'
+import { BOOK } from './reader'
 import './reader.css'
 
 interface GardenOpeningProps {
@@ -39,6 +40,14 @@ export default function GardenOpening({
   onVernacularToggle,
 }: GardenOpeningProps) {
   const [leaving, setLeaving] = useState(false)
+
+  // 后台静默预载全部场景画（不阻塞入园）：入园前就开始下载，
+  // 第一回阅读/过关的时间足够加载完，浮现时已在缓存里
+  useEffect(() => {
+    const urls = new Set<string>()
+    for (const p of BOOK) if (p.image) urls.add(p.image)
+    urls.forEach(u => { const img = new Image(); img.src = u })
+  }, [])
 
   // 开屏起即铺开轻钢琴（清新底乐）：总音量跟随声音开关；
   // 未解锁时先静默排布，第一次交互（点入园/开声音）后自然出声
