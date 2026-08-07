@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import { readFileSync } from 'node:fs'
 import { readFile, stat, appendFile, mkdir } from 'node:fs/promises'
 import { extname, join, normalize, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -7,9 +8,10 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 const dist = join(root, 'dist')
 const port = Number(process.env.PORT || 4175)
 
-async function loadLocalEnv() {
+// 同步读取本地 .env.local（Netlify/Vercel 打包为 CJS 时不允许顶层 await）
+function loadLocalEnv() {
   try {
-    const text = await readFile(join(root, '.env.local'), 'utf8')
+    const text = readFileSync(join(root, '.env.local'), 'utf8')
     for (const raw of text.split(/\r?\n/)) {
       const line = raw.trim()
       if (!line || line.startsWith('#')) continue
@@ -21,7 +23,7 @@ async function loadLocalEnv() {
     }
   } catch { /* optional */ }
 }
-await loadLocalEnv()
+loadLocalEnv()
 
 // 注意：API Key 仅在服务端使用，绝不输出到日志或返回浏览器。
 const apiKey = process.env.DEEPSEEK_API_KEY || ''
