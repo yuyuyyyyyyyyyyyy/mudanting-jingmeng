@@ -1,0 +1,169 @@
+﻿{
+  "chapterId": "10",
+  "principle": "AI 只调度同一场演出如何来到读者面前：先看见什么、哪个视觉层更明显、先听见什么、原文停留多久、哪条旧句何时回来。原文、情节、人物关系、结局一律不变。",
+  "beats": [
+    {
+      "beatId": "10-01#0",
+      "sectionId": "10-01",
+      "segmentIndex": 0,
+      "options": [
+        { "id": "hear_birds", "label": "听莺声", "motifs": ["sound", "spring"], "stagingHint": "点击后才响起。" },
+        { "id": "see_her", "label": "庭院中的她", "motifs": ["self"], "stagingHint": "先看她。" }
+      ]
+    },
+    {
+      "beatId": "10-04#1",
+      "sectionId": "10-04",
+      "segmentIndex": 1,
+      "options": [
+        { "id": "open_gate", "label": "园门", "motifs": ["threshold", "spring"], "stagingHint": "园门开了。" },
+        { "id": "mirror_self", "label": "镜中自己", "motifs": ["self"], "stagingHint": "镜台清楚一点。" }
+      ]
+    },
+    {
+      "beatId": "10-06#1",
+      "sectionId": "10-06",
+      "segmentIndex": 1,
+      "options": [
+        { "id": "follow_bloom", "label": "盛开的花", "motifs": ["spring"], "stagingHint": "花色进来。" },
+        { "id": "trace_ruin", "label": "廊上的旧迹", "motifs": ["ruin", "time"], "stagingHint": "这一处，慢一点。" }
+      ]
+    },
+    {
+      "beatId": "10-06#2",
+      "sectionId": "10-06",
+      "segmentIndex": 2,
+      "resolve": true
+    },
+    {
+      "beatId": "10-07#0",
+      "sectionId": "10-07",
+      "segmentIndex": 0,
+      "resolve": true
+    },
+    {
+      "beatId": "10-08#0",
+      "sectionId": "10-08",
+      "segmentIndex": 0,
+      "resolve": true
+    }
+  ],
+  "candidates": [
+    {
+      "id": "stage_gate_01",
+      "beatId": "10-06#2",
+      "motifs": ["spring", "sound", "threshold"],
+      "visualCue": "gate_open",
+      "soundCue": "bird_distant",
+      "pace": "linger",
+      "priority": 2,
+      "reviewed": true
+    },
+    {
+      "id": "stage_gate_02",
+      "beatId": "10-06#2",
+      "motifs": ["self"],
+      "visualCue": "mirror_focus",
+      "soundCue": "room_hush",
+      "pace": "hold",
+      "priority": 1,
+      "reviewed": true
+    },
+    {
+      "id": "stage_gate_03",
+      "beatId": "10-06#2",
+      "motifs": ["ruin", "time"],
+      "visualCue": "baseline",
+      "soundCue": "strings_thin",
+      "pace": "hold",
+      "priority": 1,
+      "reviewed": true
+    },
+    {
+      "id": "stage_bloom_01",
+      "beatId": "10-07#0",
+      "motifs": ["spring", "sound"],
+      "visualCue": "bloom_expand",
+      "soundCue": "strings_rise",
+      "pace": "linger",
+      "echoId": "e1",
+      "priority": 2,
+      "reviewed": true
+    },
+    {
+      "id": "stage_bloom_02",
+      "beatId": "10-07#0",
+      "motifs": ["spring", "threshold"],
+      "visualCue": "bloom_expand",
+      "soundCue": "bird_distant",
+      "pace": "linger",
+      "echoId": "e1",
+      "priority": 1,
+      "reviewed": true
+    },
+    {
+      "id": "stage_ruin_01",
+      "beatId": "10-07#0",
+      "motifs": ["ruin", "time"],
+      "visualCue": "ruin_reveal",
+      "soundCue": "strings_thin",
+      "pace": "hold",
+      "priority": 2,
+      "reviewed": true
+    },
+    {
+      "id": "stage_ruin_02",
+      "beatId": "10-07#0",
+      "motifs": ["ruin", "self"],
+      "visualCue": "ruin_reveal",
+      "soundCue": "silence_cut",
+      "pace": "hold",
+      "priority": 1,
+      "reviewed": true
+    },
+    {
+      "id": "stage_adaptive_spring",
+      "beatId": "10-08#0",
+      "motifs": ["spring"],
+      "visualCue": "bloom_expand",
+      "soundCue": "strings_rise",
+      "pace": "linger",
+      "echoId": "e5",
+      "priority": 1,
+      "reviewed": true
+    },
+    {
+      "id": "stage_adaptive_ruin",
+      "beatId": "10-08#0",
+      "motifs": ["ruin"],
+      "visualCue": "ruin_reveal",
+      "soundCue": "strings_thin",
+      "pace": "hold",
+      "echoId": "e9",
+      "priority": 1,
+      "reviewed": true
+    },
+    {
+      "id": "stage_adaptive_self",
+      "beatId": "10-08#0",
+      "motifs": ["self"],
+      "visualCue": "mirror_focus",
+      "soundCue": "room_hush",
+      "pace": "hold",
+      "echoId": "e6",
+      "priority": 1,
+      "reviewed": true
+    },
+    {
+      "id": "stage_adaptive_neutral",
+      "beatId": "10-08#0",
+      "motifs": [],
+      "visualCue": "baseline",
+      "soundCue": "baseline",
+      "pace": "flow",
+      "priority": 0,
+      "reviewed": true
+    }
+  ]
+}
+

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.local
+.data/
+.tools/
+.tmp/
+*.log
+.vscode/
+.workbuddy/
+*.inspect.ndjson

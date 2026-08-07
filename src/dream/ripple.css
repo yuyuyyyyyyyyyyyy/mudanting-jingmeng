@@ -1,0 +1,611 @@
+﻿/* ============================================================
+   游园 · 30 秒原型样式
+   视觉原则：工笔底 + 墨池 + 涟漪 + 胭脂余韵
+   ============================================================ */
+
+.dream-scene {
+  position: fixed;
+  inset: 0;
+  color: rgba(39, 35, 31, 0.92);
+  overflow: hidden;
+  font-family: "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", serif;
+  transition: opacity 0.9s ease;
+  background-color: #ece3d2;
+}
+
+/* ----- 0. 工笔底图：极淡 multiply 混合 ----- */
+.scene-canvas {
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/mudanting-scene-garden.webp');
+  background-size: cover;
+  background-position: center 40%;
+  background-repeat: no-repeat;
+  filter: blur(2px) saturate(0.55) brightness(1.05);
+  opacity: 0.18;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 1;
+  transform: scale(1.05); /* 防 blur 露白边 */
+}
+
+/* ----- 1. 墨池：水墨晕染，色温随状态漂移 ----- */
+.ink-pool {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  transition: background 1.8s ease;
+}
+
+/* 默认 / 中性：清水淡墨 */
+.ink-pool {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(247, 243, 234, 0.45) 0%,
+      rgba(247, 243, 234, 0.18) 30%,
+      transparent 65%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, calc(var(--ink-depth, 0.08) * 1.6)) 0%,
+      rgba(28, 26, 23, calc(var(--ink-depth, 0.08) * 0.5)) 40%,
+      transparent 75%),
+    radial-gradient(ellipse 90% 70% at 50% 0%,
+      rgba(28, 26, 23, calc(var(--ink-depth, 0.08) * 1.0)) 0%,
+      transparent 60%);
+}
+
+/* 边角晕影（让画面像被框住） */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background:
+    radial-gradient(ellipse 85% 80% at 50% 50%,
+      transparent 0%,
+      transparent 55%,
+      rgba(28, 26, 23, 0.22) 95%,
+      rgba(28, 26, 23, 0.42) 100%);
+  pointer-events: none;
+}
+
+/* ----- 2. 墨粒子：缓慢上浮的小墨滴（"墨在水中散"） ----- */
+.motes {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mote {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(28, 26, 23, 0.45) 0%, rgba(28, 26, 23, 0.08) 60%, transparent 100%);
+  animation: moteFloat var(--mote-duration, 18s) linear infinite;
+  animation-delay: var(--mote-delay, 0s);
+}
+
+@keyframes moteFloat {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  10%  { opacity: var(--mote-opacity, 0.6); }
+  85%  { opacity: var(--mote-opacity, 0.6); }
+  100% { transform: translateY(calc(-100vh - 40px)) translateX(var(--mote-drift, 12px)); opacity: 0; }
+}
+
+/* 入场引导卡片的样式已统一收在 reader.css（与 AI 面板同左对齐），此处不再重复定义 */
+
+/* ----- 顶部控件 ----- */
+.dream-controls {
+  position: fixed;
+  top: 1.1rem;
+  right: 1.4rem;
+  display: flex;
+  gap: 0.35rem;
+  z-index: 50;
+}
+
+.dream-controls button {
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 0;
+  background: rgba(247, 243, 234, 0.4);
+  backdrop-filter: blur(2px);
+  color: rgba(39, 35, 31, 0.42);
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color 0.3s ease, background 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.dream-controls button:hover {
+  color: rgba(166, 93, 104, 0.85);
+  background: rgba(247, 243, 234, 0.7);
+}
+
+.dream-controls button.on {
+  color: rgba(166, 93, 104, 0.75);
+  background: rgba(247, 243, 234, 0.6);
+}
+
+/* ----- 主体：垂直堆叠的 4 句 ----- */
+.dream-stage {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 2rem 6.5rem;  /* 上下 padding 收紧，让 9 句 + 心声 + 提示同屏 */
+}
+
+.verse-stack {
+  max-width: 30em;
+  text-align: center;
+}
+
+.verse-line {
+  font-size: 1.55rem;  /* 1.7 → 1.55：让 4 句稳在一屏内，不被心声压到底 */
+  line-height: 2.2;
+  letter-spacing: 0.14em;
+  color: rgba(39, 35, 31, 0.92);
+  opacity: 0;
+  transform: translateY(12px) scale(0.985);
+  filter: blur(4px);
+  animation: verseIn 2.6s ease forwards;
+  animation-delay: var(--line-delay, 0s);
+  margin: 0.4rem 0;
+  text-shadow: 0 0 22px rgba(247, 243, 234, 0.55), 0 1px 0 rgba(247, 243, 234, 0.6);
+}
+
+@keyframes verseIn {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.985); filter: blur(4px); }
+  60%  { opacity: 0.95; }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.verse-row {
+  display: inline-block;
+  animation: verseBreathe 7s ease-in-out infinite;
+}
+
+@keyframes verseBreathe {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50%      { filter: drop-shadow(0 0 8px rgba(166, 93, 104, 0.06)); }
+}
+
+.char-wrap {
+  display: inline-block;
+  position: relative;
+}
+
+.char {
+  display: inline-block;
+  padding: 0 0.04em;
+  color: rgba(39, 35, 31, 0.9);
+  cursor: default;
+  transition: color 0.5s ease, text-shadow 0.5s ease, transform 0.3s ease;
+  user-select: none;
+}
+
+.char:hover {
+  color: rgba(166, 93, 104, 0.92);
+  text-shadow: 0 0 16px rgba(166, 93, 104, 0.45), 0 0 5px rgba(166, 93, 104, 0.7);
+  transform: translateY(-2px);
+}
+
+.char.dwelled {
+  color: rgba(166, 93, 104, 0.95);
+  text-shadow: 0 0 20px rgba(166, 93, 104, 0.55), 0 0 6px rgba(166, 93, 104, 0.8);
+  transform: translateY(-2px);
+}
+
+/* 今译（极淡，25% 视觉权重） */
+.verse-vernacular {
+  font-size: 0.72rem;
+  color: rgba(60, 50, 45, 0.5);
+  font-style: italic;
+  margin-top: 0.35em;
+  letter-spacing: 0.08em;
+  font-weight: 300;
+  text-shadow: 0 0 12px rgba(247, 243, 234, 0.6);
+}
+
+/* ----- 涟漪层：多环 + 模糊，更像水墨 ----- */
+.ripple-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.ripple {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.ripple::before, .ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(166, 93, 104, 0.55);
+  background: transparent;
+  transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
+  animation: rippleOut 3.4s ease-out forwards;
+}
+
+.ripple::after {
+  animation-delay: 0.5s;
+  border-color: rgba(166, 93, 104, 0.32);
+}
+
+@keyframes rippleOut {
+  0%   { width: 0;    height: 0;    opacity: 0.85; }
+  60%  { opacity: 0.32; }
+  100% { width: 560px; height: 560px; opacity: 0; }
+}
+
+/* ----- 右下角"随她去" ----- */
+.dream-hint {
+  position: fixed;
+  right: 1.8rem;
+  bottom: 1.4rem;
+  z-index: 35;
+  color: rgba(60, 50, 45, 0.42);
+  font-size: 0.82rem;
+  letter-spacing: 0.5em;
+  pointer-events: none;
+  animation: hintPulse 5s ease-in-out infinite;
+  font-weight: 300;
+  text-shadow: 0 0 14px rgba(247, 243, 234, 0.6);
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.32; }
+  50%      { opacity: 0.7; }
+}
+
+/* ============================================================
+   游园 · 30 秒 · 杜丽娘心声版样式
+   AI 唯一输出 = inner-voice（屏幕底部居中，与主文字隔离不重叠）
+   没有终曲页 —— 读完了就在原位安静收束
+   ============================================================ */
+
+/* ----- 阶段标记：小朱红点 + 字（惊叹 / 疑问 / 痛悟）----- */
+.phase-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  margin: 1.0rem 0 0.3rem;
+  opacity: 0;
+  animation: phaseIn 2.4s ease forwards;
+  animation-delay: var(--phase-delay, 0s);
+}
+
+.phase-marker:first-child { margin-top: 0.2rem; }
+
+.phase-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(166, 93, 104, 0.7);
+  box-shadow: 0 0 6px rgba(166, 93, 104, 0.3);
+}
+
+.phase-label {
+  font-size: 0.72rem;
+  color: rgba(166, 93, 104, 0.55);
+  letter-spacing: 0.5em;
+  font-weight: 300;
+  font-family: inherit;
+}
+
+@keyframes phaseIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ----- 关闭动效 ----- */
+body.no-motion-dream .ripple,
+body.no-motion-dream .mote,
+body.no-motion-dream .trace-mark,
+body.no-motion-dream .phase-marker {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+body.no-motion-dream .verse-line {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+body.no-motion-dream .verse-row {
+  animation: none !important;
+}
+
+body.no-motion-dream .dream-hint {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* 痕迹层：被停留过的字下方留胭脂墨渍 */
+.trace-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 28;
+}
+
+.trace-mark {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(166, 93, 104, 0.55) 0%,
+    rgba(166, 93, 104, 0.22) 35%,
+    rgba(166, 93, 104, 0.05) 70%,
+    transparent 100%);
+  transform: translate(-50%, -50%);
+  animation: traceSeep 3s ease-out forwards;
+  mix-blend-mode: multiply;
+  filter: blur(0.3px);
+}
+
+@keyframes traceSeep {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  60%  { opacity: 0.9; }
+  100% { opacity: 0.7; transform: translate(-50%, -50%) scale(2.0); filter: blur(1.4px); }
+}
+
+/* 色温漂移：融合版根据累计偏向 */
+.dream-fusion.hue-spring .ink-pool {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(247, 243, 234, 0.4) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(88, 117, 109, calc(var(--ink-depth, 0.08) * 1.0)) 0%,
+      rgba(88, 117, 109, calc(var(--ink-depth, 0.08) * 0.4)) 35%,
+      transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, calc(var(--ink-depth, 0.08) * 1.6)) 0%,
+      transparent 75%);
+}
+
+.dream-fusion.hue-ruin .ink-pool {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(247, 243, 234, 0.32) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 70% 55% at 50% 50%,
+      rgba(28, 26, 23, calc(var(--ink-depth, 0.08) * 1.4)) 0%,
+      rgba(28, 26, 23, calc(var(--ink-depth, 0.08) * 0.7)) 35%,
+      transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, calc(var(--ink-depth, 0.08) * 1.7)) 0%,
+      transparent 75%);
+}
+
+.dream-fusion.hue-self .ink-pool {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(247, 243, 234, 0.4) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(166, 93, 104, calc(var(--ink-depth, 0.08) * 0.6)) 0%,
+      rgba(166, 93, 104, calc(var(--ink-depth, 0.08) * 0.18)) 35%,
+      transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, calc(var(--ink-depth, 0.08) * 1.6)) 0%,
+      transparent 75%);
+}
+
+/* ----- 飘落的落英：少量散落的花瓣粒子（用 CSS 形状，不是图片） ----- */
+.petal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.petal {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border-radius: 50% 0 50% 50%;
+  background: radial-gradient(ellipse at 30% 30%, rgba(232, 168, 178, 0.75), rgba(166, 93, 104, 0.45) 60%, transparent 100%);
+  animation: petalFall var(--petal-duration, 14s) linear infinite;
+  animation-delay: var(--petal-delay, 0s);
+  transform: rotate(var(--petal-rotate, 0deg));
+  opacity: var(--petal-opacity, 0.6);
+}
+
+@keyframes petalFall {
+  0%   { transform: translate(0, -20px) rotate(0deg); opacity: 0; }
+  8%   { opacity: var(--petal-opacity, 0.6); }
+  90%  { opacity: var(--petal-opacity, 0.6); }
+  100% { transform: translate(var(--petal-drift, 60px), calc(100vh + 30px)) rotate(540deg); opacity: 0; }
+}
+
+/* ============================================================
+   三幕完整版：游园 → 惊梦 → 一声一墨
+   ============================================================ */
+
+/* ----- 铺陈弱化：朝飞暮卷等 4 句四字句（30% 视觉权重） ----- */
+.verse-line--minor {
+  font-size: 0.95rem;
+  line-height: 1.9;
+  letter-spacing: 0.24em;
+  color: rgba(60, 50, 45, 0.5);
+  margin: 0.1rem 0;
+}
+.char--minor {
+  color: rgba(60, 50, 45, 0.55);
+}
+.char--minor:hover {
+  color: rgba(166, 93, 104, 0.75);
+  text-shadow: 0 0 12px rgba(166, 93, 104, 0.35), 0 0 4px rgba(166, 93, 104, 0.55);
+  transform: translateY(-1px);
+}
+
+/* ----- 三色墨点：spring=春青  ruin=墨褐  self=胭脂 ----- */
+.trace-mark--spring {
+  background: radial-gradient(circle,
+    rgba(88, 117, 109, 0.55) 0%,
+    rgba(88, 117, 109, 0.22) 35%,
+    rgba(88, 117, 109, 0.05) 70%,
+    transparent 100%);
+}
+.trace-mark--ruin {
+  background: radial-gradient(circle,
+    rgba(80, 65, 50, 0.55) 0%,
+    rgba(80, 65, 50, 0.22) 35%,
+    rgba(80, 65, 50, 0.05) 70%,
+    transparent 100%);
+}
+
+/* ----- 第二幕 · 入梦：夜蓝转暗 ----- */
+.dream-scene--dream .ink-pool {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%,
+      rgba(38, 46, 58, 0.35) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(20, 24, 30, 0.55) 0%,
+      transparent 75%);
+}
+.dream-scene--dream .scene-canvas {
+  opacity: 0.09;
+}
+/* 梦中的皂罗袍退后：缩小变淡，让山桃红成为唯一主角 */
+.dream-scene--dream .verse-line:not(.dream-line) {
+  font-size: 0.95rem;
+  line-height: 1.9;
+  color: rgba(60, 50, 45, 0.55);
+  opacity: 0.85;
+}
+.dream-scene--dream .verse-line:not(.dream-line) .char {
+  color: rgba(60, 50, 45, 0.6);
+}
+.dream-scene--dream .verse-line:not(.dream-line) .verse-vernacular {
+  display: none;
+}
+.dream-scene--dream .verse-line:not(.dream-line) .phase-label {
+  font-size: 0.62rem;
+}
+
+/* ----- 山桃红 · 柳生句（梦幕主角，月光青） ----- */
+.dream-line .verse-row .char {
+  color: rgba(96, 116, 122, 0.92);
+  text-shadow: 0 0 18px rgba(247, 243, 234, 0.5), 0 0 6px rgba(120, 150, 160, 0.3);
+}
+
+/* 柳生应答（梦幕，上方青墨）与收束句：以 reader.css 权威版本为准 */
+
+/* ----- 第三幕 · 梦醒：主文字退后，留白给那一句 ----- */
+.dream-scene--wake .dream-stage {
+  opacity: 0.38;
+  transition: opacity 2s ease;
+}
+.dream-scene--wake .scene-canvas,
+.dream-scene--wake .motes,
+.dream-scene--wake .petal-layer,
+.dream-scene--wake .trace-layer,
+.dream-scene--wake .ripple-layer {
+  opacity: 0.35;
+  transition: opacity 1.5s ease;
+}
+
+/* ----- 第三幕 · 那一句「想通了的话」 ----- */
+.final-voice {
+  position: fixed;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 60;
+  text-align: center;
+  pointer-events: none;
+  animation: finalVoiceIn 3s ease both;
+  max-width: 80vw;
+}
+.final-voice-mark {
+  display: block;
+  font-size: 0.72rem;
+  color: rgba(60, 50, 45, 0.42);
+  letter-spacing: 0.6em;
+  margin-bottom: 1.2em;
+  font-weight: 300;
+}
+.final-voice-text {
+  display: block;
+  font-size: 1.9rem;
+  color: rgba(39, 35, 31, 0.82);
+  font-family: 'XinShuSong', 'STKaiti', 'KaiTi', 'Kaiti SC', serif;
+  letter-spacing: 0.3em;
+  line-height: 1.7;
+  text-shadow: 0 0 26px rgba(247, 243, 234, 0.9), 0 0 8px rgba(166, 93, 104, 0.18);
+}
+@keyframes finalVoiceIn {
+  0%   { opacity: 0; }
+  25%  { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ----- 第三幕 · 合卷入口（右下极淡，hover 显形） ----- */
+.final-close {
+  position: fixed;
+  right: 2rem;
+  bottom: 1.6rem;
+  z-index: 60;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed rgba(39, 35, 31, 0.3);
+  color: rgba(60, 50, 45, 0.5);
+  text-align: right;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+  padding: 0 0 0.3em;
+  line-height: 1.5;
+}
+.final-close:hover {
+  opacity: 1;
+  color: rgba(166, 93, 104, 0.9);
+  border-bottom-color: rgba(166, 93, 104, 0.5);
+}
+.final-close-main {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  font-family: inherit;
+}
+.final-close-sub {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: rgba(60, 50, 45, 0.38);
+  font-style: italic;
+}
+
+/* 关闭动效时：收束句不再动画（柳生应答的 no-motion 规则以 reader.css 为准） */
+body.no-motion-dream .final-voice {
+  animation: none !important;
+  opacity: 1 !important;
+}

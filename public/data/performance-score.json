@@ -1,0 +1,92 @@
+﻿{
+  "chapterId": "10",
+  "title": "《惊梦》演出总谱",
+  "principle": "同一时刻只有一个主角；原文最强时，引路人退场。",
+  "phases": [
+    {
+      "id": "chamber",
+      "label": "深闺",
+      "from": "10-01",
+      "to": "10-03",
+      "lead": "guide",
+      "visual": { "bloom": 0.08, "density": 0.06, "motion": "still", "palette": "ink" },
+      "music": { "mode": "chamber", "intensity": 0.08, "motif": "two_notes", "hardCut": false },
+      "guide": { "mode": "orient", "maxChars": 72 },
+      "thread": { "node": "未见春", "action": "hold" },
+      "entryCue": "她今天只想去自家的后花园看一眼。后来，这一眼会把她带到生死之间。"
+    },
+    {
+      "id": "threshold",
+      "label": "园门将开",
+      "from": "10-04",
+      "to": "10-06",
+      "lead": "stage",
+      "visual": { "bloom": 0.38, "density": 0.3, "motion": "stir", "palette": "jade" },
+      "music": { "mode": "threshold", "intensity": 0.24, "motif": "two_notes_near", "hardCut": false },
+      "guide": { "mode": "stage_cue", "maxChars": 24 },
+      "thread": { "node": "越门", "action": "advance" },
+      "entryCue": "镜子在前。园门还没有开。"
+    },
+    {
+      "id": "garden",
+      "label": "游园",
+      "from": "10-07",
+      "to": "10-10",
+      "lead": "original",
+      "visual": { "bloom": 0.82, "density": 0.76, "motion": "bloom", "palette": "rouge_jade" },
+      "music": { "mode": "garden", "intensity": 0.58, "motif": "three_notes", "hardCut": false },
+      "guide": { "mode": "echo_only", "maxChars": 16 },
+      "thread": { "node": "看见春", "action": "advance" },
+      "entryCue": "门开了。"
+    },
+    {
+      "id": "self",
+      "label": "自伤",
+      "from": "10-11",
+      "to": "10-11",
+      "lead": "original",
+      "visual": { "bloom": 0.92, "density": 0.72, "motion": "misalign", "palette": "rouge_indigo" },
+      "music": { "mode": "self", "intensity": 0.48, "motif": "missing_note", "hardCut": false },
+      "guide": { "mode": "silent", "maxChars": 0 },
+      "thread": { "node": "看见自己", "action": "tighten" },
+      "entryCue": null
+    },
+    {
+      "id": "dream",
+      "label": "入梦",
+      "from": "10-12",
+      "to": "10-15",
+      "lead": "scene",
+      "visual": { "bloom": 1, "density": 1, "motion": "open_depth", "palette": "dream" },
+      "music": { "mode": "dream", "intensity": 0.82, "motif": "theme_complete", "hardCut": false },
+      "guide": { "mode": "entrance_only", "maxChars": 12 },
+      "thread": { "node": "梦中相逢", "action": "behind_page" },
+      "entryCue": "灯暗。园林留在台上。"
+    },
+    {
+      "id": "wake",
+      "label": "梦醒",
+      "from": "10-16",
+      "to": "10-16",
+      "lead": "silence",
+      "visual": { "bloom": 0.22, "density": 0.08, "motion": "collapse", "palette": "cold_ink" },
+      "music": { "mode": "wake", "intensity": 0, "motif": "none", "hardCut": true },
+      "guide": { "mode": "silent", "maxChars": 0 },
+      "thread": { "node": "骤断", "action": "return_trace" },
+      "entryCue": null
+    },
+    {
+      "id": "aftermath",
+      "label": "余波",
+      "from": "10-17",
+      "to": "10-20",
+      "lead": "echo",
+      "visual": { "bloom": 0.14, "density": 0.1, "motion": "afterimage", "palette": "faded_rouge" },
+      "music": { "mode": "aftermath", "intensity": 0.12, "motif": "theme_fragment", "hardCut": false },
+      "guide": { "mode": "recall_only", "maxChars": 18 },
+      "thread": { "node": "梦未远", "action": "remain" },
+      "entryCue": "人醒了。梦里的话没有醒。"
+    }
+  ]
+}
+

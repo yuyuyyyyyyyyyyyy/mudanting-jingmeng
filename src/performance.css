@@ -1,0 +1,2735 @@
+/* ============================================================
+   《牡丹亭》演出页 —— 我的审美重构
+   设计原则：
+   - 文字是绝对主角，所有 UI 退到边缘
+   - 三层视觉层次：原文（深墨）→ 辅助（淡墨）→ 控制（极淡）
+   - 多色和谐：胭脂红 / 竹青 / 黛蓝 / 赭石
+   - 屏气凝神的留白，不要被控件追着跑
+   - 场景底图：4 段 0.18 透明度的低饱和图层，不抢戏
+   ============================================================ */
+
+:root {
+  --paper: #F3EFE6;
+  --paper-deep: #EDE8DC;
+  --paper-dream: #ECEFEA;
+  --ink: #27231F;
+  --ink-soft: #5C544A;
+  --ink-faint: #9A8F7E;
+  --ink-ghost: #BFB7A8;
+
+  --rouge: #A65D68;        /* 胭脂红 */
+  --rouge-faint: rgba(166, 93, 104, 0.32);
+  --rouge-haze: rgba(166, 93, 104, 0.08);
+
+  --jade: #58756D;         /* 竹青 */
+  --jade-faint: rgba(88, 117, 109, 0.24);
+  --jade-haze: rgba(88, 117, 109, 0.08);
+
+  --indigo: #66768B;       /* 黛蓝 */
+  --indigo-faint: rgba(102, 118, 139, 0.24);
+  --indigo-haze: rgba(102, 118, 139, 0.07);
+
+  --ochre: #A17C4F;        /* 赭石 */
+  --ochre-faint: rgba(161, 124, 79, 0.24);
+  --ochre-haze: rgba(161, 124, 79, 0.08);
+
+  --hairline: rgba(39, 35, 31, 0.10);
+  --hairline-faint: rgba(39, 35, 31, 0.05);
+}
+
+/* ================= 演出舞台 ================= */
+
+.performance {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--paper);
+  /* 四角晕染：四色和谐共存，纸面有呼吸感 */
+  background-image:
+    radial-gradient(circle at 8% 6%, var(--jade-haze), transparent 28%),
+    radial-gradient(circle at 92% 12%, var(--indigo-haze), transparent 24%),
+    radial-gradient(circle at 12% 88%, var(--ochre-haze), transparent 30%),
+    radial-gradient(circle at 88% 94%, var(--rouge-haze), transparent 32%);
+  background-attachment: fixed;
+}
+
+/* 工笔场景底图：克制，0.18 透明度，绝不抢戏 */
+.performance-scenery {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.performance-scenery::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transition: opacity 1.6s ease, filter 2.2s ease, transform 18s ease;
+  transform: scale(1.04);
+  will-change: opacity, transform;
+  animation: sceneryDrift 24s ease-in-out infinite alternate;
+}
+.performance-scenery::after {
+  /* 场景顶上一道轻纱般的纸面遮罩，让场景像隔着纸看 */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(243, 239, 230, 0.18) 0%,
+    rgba(243, 239, 230, 0.08) 30%,
+    rgba(243, 239, 230, 0.20) 65%,
+    rgba(243, 239, 230, 0.42) 100%);
+  pointer-events: none;
+}
+@keyframes sceneryDrift {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to   { transform: scale(1.06) translate3d(-0.4%, 0.2%, 0); }
+}
+
+/* 各相位对应不同场景底图 */
+.performance-chamber .performance-scenery::before {
+  opacity: 0.20;
+  background-image: url('/assets/mudanting-scene-wake.webp');
+  background-position: center;
+}
+.performance-threshold .performance-scenery::before {
+  opacity: 0.22;
+  background-image: url('/assets/mudanting-scene-garden.webp');
+  background-position: 42% center;
+}
+.performance-garden .performance-scenery::before,
+.performance-self .performance-scenery::before {
+  opacity: 0.26;
+  background-image: url('/assets/mudanting-scene-garden.webp');
+}
+.performance-dream .performance-scenery::before {
+  opacity: 0.30;
+  filter: hue-rotate(-8deg) saturate(0.92);
+  background-image: url('/assets/mudanting-scene-dream.webp');
+}
+.performance-wake .performance-scenery::before,
+.performance-aftermath .performance-scenery::before {
+  opacity: 0.22;
+  filter: saturate(0.6);
+  background-image: url('/assets/mudanting-scene-wake.webp');
+}
+
+/* 舞台光带：极轻的一道斜光，不抢戏 */
+.performance::after {
+  content: "";
+  position: absolute;
+  left: -20%;
+  top: -30%;
+  width: 30%;
+  height: 170%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 250, 232, 0.14), transparent);
+  transform: skewX(-14deg);
+  animation: stageLight 16s ease-in-out infinite;
+}
+@keyframes stageLight {
+  0%, 22%  { transform: translateX(-40vw) skewX(-14deg); opacity: 0; }
+  50%      { opacity: 0.5; }
+  78%, 100% { transform: translateX(150vw) skewX(-14deg); opacity: 0; }
+}
+
+/* ================= 顶部：极轻的题签 ================= */
+
+.performance-masthead {
+  position: relative;
+  z-index: 6;
+  padding: 2.2rem 1.5rem 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1.2rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: var(--ink-faint);
+  user-select: none;
+}
+.performance-masthead .masthead-divider {
+  width: 1.6rem;
+  height: 1px;
+  background: var(--ink-ghost);
+  opacity: 0.5;
+}
+.performance-masthead .masthead-tap {
+  position: absolute;
+  right: 1.5rem;
+  top: 2.2rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 1px;
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-masthead .masthead-tap:hover {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+/* ================= 中部：原文（绝对主角） ================= */
+
+.performance-stage {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(48rem, calc(100vw - 6rem));
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  animation: stageIn 1.1s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes stageIn {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); filter: blur(2px); }
+  to   { opacity: 1; transform: translate(-50%, -50%); filter: none; }
+}
+
+/* 相位小标：第一行（10% 视觉权重） */
+.performance-phase {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: var(--ink-faint);
+  margin-bottom: 1.4rem;
+}
+.performance-phase .phase-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+.performance-phase .phase-tick {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+}
+.performance-chamber .performance-phase { color: var(--indigo); }
+.performance-threshold .performance-phase { color: var(--ochre); }
+.performance-garden .performance-phase,
+.performance-self .performance-phase { color: var(--jade); }
+.performance-dream .performance-phase { color: var(--indigo); }
+.performance-wake .performance-phase,
+.performance-aftermath .performance-phase { color: var(--ink-faint); }
+
+/* 引导句（30% 视觉权重）：薄薄一层，永远在 */
+.performance-guide {
+  max-width: 24rem;
+  margin: 0 auto 1.6rem;
+  font-size: 0.78rem;
+  line-height: 2.1;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.78;
+  transition: opacity 0.6s ease;
+}
+.performance-guide::before,
+.performance-guide::after {
+  content: "—";
+  display: inline-block;
+  margin: 0 0.6em;
+  color: var(--ink-ghost);
+  font-style: normal;
+}
+.performance-dream .performance-guide { color: rgba(230, 220, 200, 0.8); }
+
+/* ================= 司梦低语：AI 思考引导 =================
+   设计参考：
+   - motionsites.ai 的 AI 驱动视觉感 → 思考时的水墨涟漪呼吸
+   - reactbits.dev 的「少即是多」→ 单一克制低语层，无多余装饰
+   - pinterest 的视觉发现引导 → 低语后微弱引导线指向下一步
+   三层视觉权重：whisper-text（30%）→ whisper-guide（12%）→ thinking（极淡） */
+
+.performance-whisper {
+  max-width: 26rem;
+  margin: 0 auto 1.2rem;
+  min-height: 2.4rem;
+  position: relative;
+  animation: whisperIn 0.9s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes whisperIn {
+  from { opacity: 0; transform: translateY(-4px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateY(0); filter: none; }
+}
+
+/* 听：思考中的水墨涟漪（motionsites 的 AI 驱动视觉感）
+   三圈错开呼吸，像戏台在侧耳听 */
+.whisper-thinking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0;
+}
+.whisper-ripple {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-ghost);
+  opacity: 0.4;
+  animation: ripplePulse 2.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+.whisper-ripple-2 { animation-delay: 0.4s; background: var(--jade); }
+.whisper-ripple-3 { animation-delay: 0.8s; background: var(--rouge); }
+@keyframes ripplePulse {
+  0%   { transform: scale(0.6); opacity: 0.18; }
+  50%  { transform: scale(1.5); opacity: 0.72; }
+  100% { transform: scale(0.6); opacity: 0.18; }
+}
+.whisper-thinking-text {
+  font-size: 0.66rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: var(--ink-ghost);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* 语：低语文本（reactbits 的克制单一层，30% 视觉权重） */
+.whisper-body {
+  text-align: center;
+  position: relative;
+}
+.whisper-text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.95;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.82;
+  text-wrap: balance;
+  transition: opacity 0.4s ease;
+}
+.whisper-text::before,
+.whisper-text::after {
+  content: "·";
+  display: inline-block;
+  margin: 0 0.5em;
+  color: var(--ink-ghost);
+  font-style: normal;
+  opacity: 0.5;
+}
+.whisper-cursor {
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-left: 2px;
+  vertical-align: -0.1em;
+  background: var(--rouge);
+  animation: cursorBlink 0.9s steps(2, end) infinite;
+}
+@keyframes cursorBlink {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 引：引导短语（pinterest 的视觉发现引导，12% 视觉权重）
+   低语落定后，一条细线缓缓展开，指向下一步 */
+.whisper-guide {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: var(--ink-ghost);
+  opacity: 0;
+  animation: guideFadeIn 0.6s ease 1.1s forwards;
+}
+.whisper-guide::after {
+  content: "";
+  display: inline-block;
+  width: 1.4rem;
+  height: 1px;
+  margin-left: 0.6em;
+  vertical-align: middle;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: guideLine 1.6s ease 1.3s forwards;
+}
+@keyframes guideFadeIn {
+  to { opacity: 0.6; }
+}
+@keyframes guideLine {
+  to { transform: scaleX(1); }
+}
+
+/* 来源标记：DeepSeek 在场时，顶上一个极淡的胭脂点 */
+.performance-whisper[data-source="deepseek"] .whisper-body::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -0.3rem;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--rouge);
+  opacity: 0.5;
+}
+
+/* tone 微调：不同语气让低语有不同色温 */
+.performance-whisper[data-tone="observe"] .whisper-text { color: var(--ink-soft); }
+.performance-whisper[data-tone="echo"]   .whisper-text { color: var(--rouge); opacity: 0.74; }
+.performance-whisper[data-tone="hold"]   .whisper-text { color: var(--jade); opacity: 0.76; }
+.performance-whisper[data-tone="shift"]  .whisper-text { color: var(--indigo); opacity: 0.76; }
+
+/* phase 配色：让涟漪与当前戏台色调一致 */
+.performance-chamber  .whisper-ripple    { background: var(--indigo); }
+.performance-threshold .whisper-ripple   { background: var(--ochre); }
+.performance-garden .whisper-ripple,
+.performance-self .whisper-ripple        { background: var(--jade); }
+.performance-dream .whisper-ripple       { background: var(--indigo); }
+.performance-wake .whisper-ripple,
+.performance-aftermath .whisper-ripple   { background: var(--ink-faint); }
+
+/* dream 阶段低语更暖（与 dream 的暖色原文协调） */
+.performance-dream .whisper-text { color: rgba(230, 220, 200, 0.82); }
+.performance-dream .whisper-guide { color: rgba(214, 173, 133, 0.5); }
+.performance-dream .whisper-text::before,
+.performance-dream .whisper-text::after { color: rgba(214, 173, 133, 0.4); }
+
+/* 响应式 */
+@media (max-width: 720px) {
+  .performance-whisper { max-width: 22rem; margin-bottom: 0.9rem; }
+  .whisper-text { font-size: 0.78rem; }
+  .whisper-guide { font-size: 0.54rem; }
+}
+@media (max-height: 800px) {
+  .performance-whisper { margin-bottom: 0.8rem; min-height: 2rem; }
+  .whisper-text { font-size: 0.76rem; line-height: 1.8; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .performance-whisper, .whisper-ripple, .whisper-cursor, .whisper-guide {
+    animation: none !important;
+  }
+  .whisper-guide { opacity: 0.6; }
+  .whisper-guide::after { transform: scaleX(1); }
+}
+
+/* 原文（100% 视觉权重）：深墨、端正、留白 */
+.performance-original {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0.6rem 0;
+  position: relative;
+}
+.performance-original-text {
+  margin: 0;
+  font-size: clamp(1.55rem, 2.6vw, 2.3rem);
+  line-height: 1.95;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  text-wrap: balance;
+  font-weight: 500;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.performance-original-text .speaker {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.9rem;
+  border: 1px solid var(--rouge-faint);
+  color: var(--rouge);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  vertical-align: 0.32em;
+}
+.performance-original-hint {
+  display: block;
+  margin-top: 1.1rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+  color: var(--ochre);
+  opacity: 0.78;
+}
+.performance-original-hint::before { content: "〔"; }
+.performance-original-hint::after { content: "〕"; }
+
+.performance-dream .performance-original-text {
+  color: #2A2A35;
+}
+.performance-aftermath .performance-original-text {
+  color: #3A332A;
+}
+
+/* 原文下方的细线：极轻，不是分割，是句读 */
+.performance-original::after {
+  content: "";
+  display: block;
+  width: 2.4rem;
+  height: 1px;
+  margin: 1.6rem auto 0;
+  background: var(--ink-ghost);
+  opacity: 0.5;
+}
+
+/* ================= 选择点：像诗行一样的岔路口 ================= */
+
+.performance-choice {
+  margin: 2.2rem auto 0;
+  max-width: 36rem;
+  width: 100%;
+  animation: choiceIn 0.6s ease both;
+}
+@keyframes choiceIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.performance-choice-hint {
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-bottom: 1.2rem;
+  font-style: italic;
+}
+.performance-choice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.performance-choice-item {
+  display: block;
+  width: 100%;
+  padding: 0.95rem 0.4rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed rgba(39, 35, 31, 0.22);
+  font-family: inherit;
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.4s ease, transform 0.4s ease, letter-spacing 0.4s ease;
+}
+.performance-choice-item:first-child {
+  border-top: 1px dashed rgba(39, 35, 31, 0.22);
+}
+.performance-choice-item:hover {
+  color: var(--rouge);
+  transform: translateY(-2px);
+  letter-spacing: 0.24em;
+}
+.performance-choice-item.chosen {
+  color: var(--rouge);
+  pointer-events: none;
+  opacity: 0.85;
+}
+.performance-choice-item .choice-staging {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+  font-style: italic;
+}
+.performance-dream .performance-choice-item { color: rgba(220, 210, 195, 0.85); border-bottom-color: rgba(220, 210, 195, 0.2); }
+.performance-dream .performance-choice-item:first-child { border-top-color: rgba(220, 210, 195, 0.2); }
+
+/* 划线入口：让读者把"开始"放在任意句 */
+.performance-mark {
+  margin-top: 1.6rem;
+  text-align: center;
+}
+.performance-mark button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--ink-faint);
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-mark button:hover { color: var(--ink); border-color: var(--ink); }
+.performance-mark.is-set button { color: var(--rouge); border-color: var(--rouge); }
+
+/* ================= 今译：辅助，淡墨（30% 视觉权重） ================= */
+
+.performance-vernacular {
+  margin: 1.6rem auto 0;
+  max-width: 30rem;
+  padding: 0.9rem 1.1rem 0.6rem;
+  border-left: 2px solid var(--jade-faint);
+  background: linear-gradient(90deg, var(--jade-haze), transparent 86%);
+  text-align: left;
+}
+.performance-vernacular-label {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.32em;
+  color: var(--jade);
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+.performance-vernacular p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+/* ================= 回声：像注脚一样出现 ================= */
+
+.performance-echo {
+  margin: 0 auto 1.6rem;
+  max-width: 30rem;
+  padding: 0.6rem 1rem;
+  border-left: 1.5px solid var(--rouge-faint);
+  background: var(--rouge-haze);
+  text-align: left;
+  animation: echoIn 0.7s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes echoIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 0.92; transform: translateY(0); }
+}
+.performance-echo-trace {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  color: var(--rouge);
+  margin-bottom: 0.4rem;
+}
+.performance-echo-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.3rem;
+}
+.performance-echo-row {
+  font-size: 0.78rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.performance-echo-row .echo-tag {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  font-style: normal;
+  margin-bottom: 0.2rem;
+}
+.performance-echo-row .echo-arrow {
+  color: var(--ink-ghost);
+  font-style: normal;
+  margin-right: 0.4em;
+}
+.performance-echo-reason {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px dotted var(--rouge-faint);
+  font-size: 0.7rem;
+  line-height: 1.8;
+  color: var(--ink-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.performance-echo-toggle {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--ink-ghost);
+  padding: 0.2rem 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-echo-toggle:hover { color: var(--ink-soft); border-color: var(--ink-soft); }
+
+/* 司梦提示（顶上的红条）：极轻的告知，不抢戏 */
+.performance-veil {
+  position: absolute;
+  z-index: 5;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.66rem;
+  letter-spacing: 0.28em;
+  color: var(--rouge);
+  padding: 0.35rem 1rem;
+  background: rgba(247, 243, 234, 0.7);
+  border-top: 1px solid var(--rouge-faint);
+  border-bottom: 1px solid var(--rouge-faint);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: veilIn 0.8s ease both;
+}
+@keyframes veilIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 司梦收集面板：只在 dream 阶段出现 */
+.dream-collect {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(28, 33, 60, 0.32);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.dream-collect-inner {
+  width: min(28rem, 100%);
+  padding: 1.8rem 1.8rem 1.4rem;
+  background: rgba(247, 243, 234, 0.96);
+  border: 1px solid var(--jade-faint);
+  box-shadow: 0 24px 60px rgba(20, 18, 14, 0.22);
+  text-align: left;
+}
+.dream-collect-inner h3 {
+  margin: 0 0 0.8rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--jade);
+}
+.dream-collect-inner p {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.dream-collect-inner textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--jade-faint);
+  background: rgba(255, 255, 255, 0.6);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: none;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+.dream-collect-inner textarea:focus { border-color: var(--rouge); }
+.dream-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.4rem;
+  margin-top: 1rem;
+}
+.dream-actions button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  padding: 0.4rem 0.2rem;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+.dream-actions button:hover { color: var(--rouge); border-bottom-color: var(--rouge); }
+.dream-actions button.primary { color: var(--rouge); }
+.dream-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ================= 底部：相位的乐谱 ================= */
+
+.performance-coda {
+  position: absolute;
+  z-index: 5;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 1.4rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* 进度乐谱：五个相位像曲牌 */
+.performance-scoreboard {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+  position: relative;
+}
+.performance-scoreboard .score-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  padding-bottom: 0.6rem;
+  transition: color 0.6s ease;
+}
+.performance-scoreboard .score-step::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 0.6rem;
+  background: var(--ink-ghost);
+  opacity: 0.4;
+  transform: translateX(-50%);
+}
+.performance-scoreboard .score-step.current {
+  color: var(--rouge);
+  font-weight: 500;
+}
+.performance-scoreboard .score-step.current::after {
+  background: var(--rouge);
+  height: 1.2rem;
+  opacity: 0.7;
+}
+.performance-scoreboard .score-step.passed { color: var(--ink-faint); }
+.performance-scoreboard .score-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ink-ghost);
+  opacity: 0.25;
+}
+.performance-scoreboard .score-rail-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: var(--rouge);
+  opacity: 0.5;
+  transition: width 0.8s ease;
+}
+
+/* 继续提示：右下，极轻 */
+.performance-advance {
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.performance-advance .advance-arrow {
+  display: inline-block;
+  width: 0.6rem;
+  height: 1px;
+  background: var(--ink-faint);
+  position: relative;
+  animation: arrowGlide 2.4s ease-in-out infinite;
+}
+.performance-advance .advance-arrow::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-top: 1px solid var(--ink-faint);
+  border-right: 1px solid var(--ink-faint);
+  transform: translateY(-50%) rotate(45deg);
+}
+@keyframes arrowGlide {
+  0%, 100% { transform: translateX(0); opacity: 0.4; }
+  50%      { transform: translateX(4px); opacity: 1; }
+}
+
+/* ================= 痕迹：右侧页边的极淡笔迹 ================= */
+
+.performance-traces {
+  position: fixed;
+  z-index: 6;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  pointer-events: none;
+  max-width: 9rem;
+}
+.performance-traces::before {
+  content: "你留意了";
+  display: block;
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  color: var(--ink-ghost);
+  margin-bottom: 0.4rem;
+  text-align: right;
+  opacity: 0.5;
+}
+.performance-traces .trace-word {
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: rgba(39, 35, 31, 0.32);
+  font-style: italic;
+  text-align: right;
+  transition: color 0.8s ease, text-shadow 0.8s ease;
+}
+.performance-traces[data-highlight="true"] .trace-word {
+  color: var(--rouge);
+  text-shadow: 0 0 8px rgba(166, 93, 104, 0.25);
+}
+
+/* ================= 顶右：极轻的状态文字（替代 badge） ================= */
+
+.performance-state {
+  position: absolute;
+  z-index: 6;
+  top: 2.2rem;
+  left: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  user-select: none;
+  pointer-events: none;
+}
+.performance-state .state-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rouge);
+  box-shadow: 0 0 0 3px rgba(166, 93, 104, 0.12);
+  animation: statePulse 3.2s ease-in-out infinite;
+}
+.performance-state .state-text { font-style: italic; }
+.performance-state .state-text .accent { color: var(--rouge); font-style: normal; }
+.performance-dream .performance-state { color: rgba(214, 173, 133, 0.6); }
+.performance-dream .performance-state .state-dot { background: var(--ochre); box-shadow: 0 0 0 3px rgba(161, 124, 79, 0.18); }
+@keyframes statePulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+/* ================= 响应式：窄屏处理 ================= */
+
+@media (max-width: 720px) {
+  .performance-masthead { padding: 1.4rem 1.2rem 0; font-size: 0.62rem; letter-spacing: 0.32em; }
+  .performance-masthead .masthead-tap { right: 1.2rem; top: 1.4rem; }
+  .performance-stage { width: calc(100vw - 2.4rem); }
+  .performance-original-text { font-size: clamp(1.3rem, 5.5vw, 1.7rem); line-height: 1.8; }
+  .performance-original-hint { font-size: 0.68rem; }
+  .performance-choice-item { font-size: 0.96rem; padding: 0.8rem 0.2rem; }
+  .performance-traces { right: 0.8rem; max-width: 5rem; gap: 0.3rem; }
+  .performance-traces .trace-word { font-size: 0.66rem; }
+  .performance-traces::before { font-size: 0.5rem; }
+  .performance-coda { left: 1rem; right: 1rem; bottom: 0.9rem; }
+  .performance-scoreboard { font-size: 0.5rem; }
+  .performance-state { top: 1.4rem; left: 1rem; }
+  .performance-veil { top: 3.6rem; }
+  .dream-collect-inner { padding: 1.4rem 1.2rem 1.1rem; }
+}
+
+@media (max-height: 800px) {
+  .performance-stage { max-height: 70vh; }
+  .performance-original-text { font-size: clamp(1.2rem, 2.2vw, 1.7rem); line-height: 1.7; }
+  .performance-choice { margin-top: 1.4rem; }
+  .performance-choice-item { padding: 0.7rem 0.3rem; font-size: 0.96rem; }
+  .performance-traces { gap: 0.25rem; }
+  .performance-traces .trace-word { font-size: 0.7rem; }
+}
+
+/* ================= 减弱动效 ================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .performance-scenery::before,
+  .performance::after,
+  .performance-stage,
+  .performance-echo,
+  .performance-choice { animation: none !important; }
+}
+
+/* 舞台光带：极轻的一道斜光，不抢戏 */
+.performance::after {
+  content: "";
+  position: absolute;
+  left: -20%;
+  top: -30%;
+  width: 30%;
+  height: 170%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 250, 232, 0.14), transparent);
+  transform: skewX(-14deg);
+  animation: stageLight 16s ease-in-out infinite;
+}
+@keyframes stageLight {
+  0%, 22%  { transform: translateX(-40vw) skewX(-14deg); opacity: 0; }
+  50%      { opacity: 0.5; }
+  78%, 100% { transform: translateX(150vw) skewX(-14deg); opacity: 0; }
+}
+
+/* ================= 顶部：极轻的题签 ================= */
+
+.performance-masthead {
+  position: relative;
+  z-index: 6;
+  padding: 2.2rem 1.5rem 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1.2rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: var(--ink-faint);
+  user-select: none;
+}
+.performance-masthead .masthead-divider {
+  width: 1.6rem;
+  height: 1px;
+  background: var(--ink-ghost);
+  opacity: 0.5;
+}
+.performance-masthead .masthead-tap {
+  position: absolute;
+  right: 1.5rem;
+  top: 2.2rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 1px;
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-masthead .masthead-tap:hover {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+/* ================= 中部：原文（绝对主角） ================= */
+
+.performance-stage {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(48rem, calc(100vw - 6rem));
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  animation: stageIn 1.1s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes stageIn {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); filter: blur(2px); }
+  to   { opacity: 1; transform: translate(-50%, -50%); filter: none; }
+}
+
+/* 相位小标：第一行（10% 视觉权重） */
+.performance-phase {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: var(--ink-faint);
+  margin-bottom: 1.4rem;
+}
+.performance-phase .phase-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+.performance-phase .phase-tick {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+}
+.performance-chamber .performance-phase { color: var(--indigo); }
+.performance-threshold .performance-phase { color: var(--ochre); }
+.performance-garden .performance-phase,
+.performance-self .performance-phase { color: var(--jade); }
+.performance-dream .performance-phase { color: var(--indigo); }
+.performance-wake .performance-phase,
+.performance-aftermath .performance-phase { color: var(--ink-faint); }
+
+/* 引导句（30% 视觉权重）：薄薄一层，永远在 */
+.performance-guide {
+  max-width: 24rem;
+  margin: 0 auto 1.6rem;
+  font-size: 0.78rem;
+  line-height: 2.1;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.78;
+  transition: opacity 0.6s ease;
+}
+.performance-guide::before,
+.performance-guide::after {
+  content: "—";
+  display: inline-block;
+  margin: 0 0.6em;
+  color: var(--ink-ghost);
+  font-style: normal;
+}
+.performance-dream .performance-guide { color: rgba(230, 220, 200, 0.8); }
+
+/* ================= 司梦低语：AI 思考引导 =================
+   设计参考：
+   - motionsites.ai 的 AI 驱动视觉感 → 思考时的水墨涟漪呼吸
+   - reactbits.dev 的「少即是多」→ 单一克制低语层，无多余装饰
+   - pinterest 的视觉发现引导 → 低语后微弱引导线指向下一步
+   三层视觉权重：whisper-text（30%）→ whisper-guide（12%）→ thinking（极淡） */
+
+.performance-whisper {
+  max-width: 26rem;
+  margin: 0 auto 1.2rem;
+  min-height: 2.4rem;
+  position: relative;
+  animation: whisperIn 0.9s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes whisperIn {
+  from { opacity: 0; transform: translateY(-4px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateY(0); filter: none; }
+}
+
+/* 听：思考中的水墨涟漪（motionsites 的 AI 驱动视觉感）
+   三圈错开呼吸，像戏台在侧耳听 */
+.whisper-thinking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0;
+}
+.whisper-ripple {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-ghost);
+  opacity: 0.4;
+  animation: ripplePulse 2.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+.whisper-ripple-2 { animation-delay: 0.4s; background: var(--jade); }
+.whisper-ripple-3 { animation-delay: 0.8s; background: var(--rouge); }
+@keyframes ripplePulse {
+  0%   { transform: scale(0.6); opacity: 0.18; }
+  50%  { transform: scale(1.5); opacity: 0.72; }
+  100% { transform: scale(0.6); opacity: 0.18; }
+}
+.whisper-thinking-text {
+  font-size: 0.66rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: var(--ink-ghost);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* 语：低语文本（reactbits 的克制单一层，30% 视觉权重） */
+.whisper-body {
+  text-align: center;
+  position: relative;
+}
+.whisper-text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.95;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.82;
+  text-wrap: balance;
+  transition: opacity 0.4s ease;
+}
+.whisper-text::before,
+.whisper-text::after {
+  content: "·";
+  display: inline-block;
+  margin: 0 0.5em;
+  color: var(--ink-ghost);
+  font-style: normal;
+  opacity: 0.5;
+}
+.whisper-cursor {
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-left: 2px;
+  vertical-align: -0.1em;
+  background: var(--rouge);
+  animation: cursorBlink 0.9s steps(2, end) infinite;
+}
+@keyframes cursorBlink {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 引：引导短语（pinterest 的视觉发现引导，12% 视觉权重）
+   低语落定后，一条细线缓缓展开，指向下一步 */
+.whisper-guide {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: var(--ink-ghost);
+  opacity: 0;
+  animation: guideFadeIn 0.6s ease 1.1s forwards;
+}
+.whisper-guide::after {
+  content: "";
+  display: inline-block;
+  width: 1.4rem;
+  height: 1px;
+  margin-left: 0.6em;
+  vertical-align: middle;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: guideLine 1.6s ease 1.3s forwards;
+}
+@keyframes guideFadeIn {
+  to { opacity: 0.6; }
+}
+@keyframes guideLine {
+  to { transform: scaleX(1); }
+}
+
+/* 来源标记：DeepSeek 在场时，顶上一个极淡的胭脂点 */
+.performance-whisper[data-source="deepseek"] .whisper-body::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -0.3rem;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--rouge);
+  opacity: 0.5;
+}
+
+/* tone 微调：不同语气让低语有不同色温 */
+.performance-whisper[data-tone="observe"] .whisper-text { color: var(--ink-soft); }
+.performance-whisper[data-tone="echo"]   .whisper-text { color: var(--rouge); opacity: 0.74; }
+.performance-whisper[data-tone="hold"]   .whisper-text { color: var(--jade); opacity: 0.76; }
+.performance-whisper[data-tone="shift"]  .whisper-text { color: var(--indigo); opacity: 0.76; }
+
+/* phase 配色：让涟漪与当前戏台色调一致 */
+.performance-chamber  .whisper-ripple    { background: var(--indigo); }
+.performance-threshold .whisper-ripple   { background: var(--ochre); }
+.performance-garden .whisper-ripple,
+.performance-self .whisper-ripple        { background: var(--jade); }
+.performance-dream .whisper-ripple       { background: var(--indigo); }
+.performance-wake .whisper-ripple,
+.performance-aftermath .whisper-ripple   { background: var(--ink-faint); }
+
+/* dream 阶段低语更暖（与 dream 的暖色原文协调） */
+.performance-dream .whisper-text { color: rgba(230, 220, 200, 0.82); }
+.performance-dream .whisper-guide { color: rgba(214, 173, 133, 0.5); }
+.performance-dream .whisper-text::before,
+.performance-dream .whisper-text::after { color: rgba(214, 173, 133, 0.4); }
+
+/* 响应式 */
+@media (max-width: 720px) {
+  .performance-whisper { max-width: 22rem; margin-bottom: 0.9rem; }
+  .whisper-text { font-size: 0.78rem; }
+  .whisper-guide { font-size: 0.54rem; }
+}
+@media (max-height: 800px) {
+  .performance-whisper { margin-bottom: 0.8rem; min-height: 2rem; }
+  .whisper-text { font-size: 0.76rem; line-height: 1.8; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .performance-whisper, .whisper-ripple, .whisper-cursor, .whisper-guide {
+    animation: none !important;
+  }
+  .whisper-guide { opacity: 0.6; }
+  .whisper-guide::after { transform: scaleX(1); }
+}
+
+/* 原文（100% 视觉权重）：深墨、端正、留白 */
+.performance-original {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0.6rem 0;
+  position: relative;
+}
+.performance-original-text {
+  margin: 0;
+  font-size: clamp(1.55rem, 2.6vw, 2.3rem);
+  line-height: 1.95;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  text-wrap: balance;
+  font-weight: 500;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.performance-original-text .speaker {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.9rem;
+  border: 1px solid var(--rouge-faint);
+  color: var(--rouge);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  vertical-align: 0.32em;
+}
+.performance-original-hint {
+  display: block;
+  margin-top: 1.1rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+  color: var(--ochre);
+  opacity: 0.78;
+}
+.performance-original-hint::before { content: "〔"; }
+.performance-original-hint::after { content: "〕"; }
+
+.performance-dream .performance-original-text {
+  color: #2A2A35;
+}
+.performance-aftermath .performance-original-text {
+  color: #3A332A;
+}
+
+/* 原文下方的细线：极轻，不是分割，是句读 */
+.performance-original::after {
+  content: "";
+  display: block;
+  width: 2.4rem;
+  height: 1px;
+  margin: 1.6rem auto 0;
+  background: var(--ink-ghost);
+  opacity: 0.5;
+}
+
+/* ================= 选择点：像诗行一样的岔路口 ================= */
+
+.performance-choice {
+  margin: 2.2rem auto 0;
+  max-width: 36rem;
+  width: 100%;
+  animation: choiceIn 0.6s ease both;
+}
+@keyframes choiceIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.performance-choice-hint {
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-bottom: 1.2rem;
+  font-style: italic;
+}
+.performance-choice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.performance-choice-item {
+  display: block;
+  width: 100%;
+  padding: 0.95rem 0.4rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed rgba(39, 35, 31, 0.22);
+  font-family: inherit;
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.4s ease, transform 0.4s ease, letter-spacing 0.4s ease;
+}
+.performance-choice-item:first-child {
+  border-top: 1px dashed rgba(39, 35, 31, 0.22);
+}
+.performance-choice-item:hover {
+  color: var(--rouge);
+  transform: translateY(-2px);
+  letter-spacing: 0.24em;
+}
+.performance-choice-item.chosen {
+  color: var(--rouge);
+  pointer-events: none;
+  opacity: 0.85;
+}
+.performance-choice-item .choice-staging {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+  font-style: italic;
+}
+.performance-dream .performance-choice-item { color: rgba(220, 210, 195, 0.85); border-bottom-color: rgba(220, 210, 195, 0.2); }
+.performance-dream .performance-choice-item:first-child { border-top-color: rgba(220, 210, 195, 0.2); }
+
+/* 划线入口：让读者把"开始"放在任意句 */
+.performance-mark {
+  margin-top: 1.6rem;
+  text-align: center;
+}
+.performance-mark button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--ink-faint);
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-mark button:hover { color: var(--ink); border-color: var(--ink); }
+.performance-mark.is-set button { color: var(--rouge); border-color: var(--rouge); }
+
+/* ================= 今译：辅助，淡墨（30% 视觉权重） ================= */
+
+.performance-vernacular {
+  margin: 1.6rem auto 0;
+  max-width: 30rem;
+  padding: 0.9rem 1.1rem 0.6rem;
+  border-left: 2px solid var(--jade-faint);
+  background: linear-gradient(90deg, var(--jade-haze), transparent 86%);
+  text-align: left;
+}
+.performance-vernacular-label {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.32em;
+  color: var(--jade);
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+.performance-vernacular p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+/* ================= 回声：像注脚一样出现 ================= */
+
+.performance-echo {
+  margin: 0 auto 1.6rem;
+  max-width: 30rem;
+  padding: 0.6rem 1rem;
+  border-left: 1.5px solid var(--rouge-faint);
+  background: var(--rouge-haze);
+  text-align: left;
+  animation: echoIn 0.7s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes echoIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 0.92; transform: translateY(0); }
+}
+.performance-echo-trace {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  color: var(--rouge);
+  margin-bottom: 0.4rem;
+}
+.performance-echo-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.3rem;
+}
+.performance-echo-row {
+  font-size: 0.78rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.performance-echo-row .echo-tag {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  font-style: normal;
+  margin-bottom: 0.2rem;
+}
+.performance-echo-row .echo-arrow {
+  color: var(--ink-ghost);
+  font-style: normal;
+  margin-right: 0.4em;
+}
+.performance-echo-reason {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px dotted var(--rouge-faint);
+  font-size: 0.7rem;
+  line-height: 1.8;
+  color: var(--ink-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.performance-echo-toggle {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--ink-ghost);
+  padding: 0.2rem 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-echo-toggle:hover { color: var(--ink-soft); border-color: var(--ink-soft); }
+
+/* 司梦提示（顶上的红条）：极轻的告知，不抢戏 */
+.performance-veil {
+  position: absolute;
+  z-index: 5;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.66rem;
+  letter-spacing: 0.28em;
+  color: var(--rouge);
+  padding: 0.35rem 1rem;
+  background: rgba(247, 243, 234, 0.7);
+  border-top: 1px solid var(--rouge-faint);
+  border-bottom: 1px solid var(--rouge-faint);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: veilIn 0.8s ease both;
+}
+@keyframes veilIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 司梦收集面板：只在 dream 阶段出现 */
+.dream-collect {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(28, 33, 60, 0.32);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.dream-collect-inner {
+  width: min(28rem, 100%);
+  padding: 1.8rem 1.8rem 1.4rem;
+  background: rgba(247, 243, 234, 0.96);
+  border: 1px solid var(--jade-faint);
+  box-shadow: 0 24px 60px rgba(20, 18, 14, 0.22);
+  text-align: left;
+}
+.dream-collect-inner h3 {
+  margin: 0 0 0.8rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--jade);
+}
+.dream-collect-inner p {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.dream-collect-inner textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--jade-faint);
+  background: rgba(255, 255, 255, 0.6);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: none;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+.dream-collect-inner textarea:focus { border-color: var(--rouge); }
+.dream-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.4rem;
+  margin-top: 1rem;
+}
+.dream-actions button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  padding: 0.4rem 0.2rem;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+.dream-actions button:hover { color: var(--rouge); border-bottom-color: var(--rouge); }
+.dream-actions button.primary { color: var(--rouge); }
+.dream-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ================= 底部：相位的乐谱 ================= */
+
+.performance-coda {
+  position: absolute;
+  z-index: 5;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 1.4rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* 进度乐谱：五个相位像曲牌 */
+.performance-scoreboard {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+  position: relative;
+}
+.performance-scoreboard .score-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  padding-bottom: 0.6rem;
+  transition: color 0.6s ease;
+}
+.performance-scoreboard .score-step::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 0.6rem;
+  background: var(--ink-ghost);
+  opacity: 0.4;
+  transform: translateX(-50%);
+}
+.performance-scoreboard .score-step.current {
+  color: var(--rouge);
+  font-weight: 500;
+}
+.performance-scoreboard .score-step.current::after {
+  background: var(--rouge);
+  height: 1.2rem;
+  opacity: 0.7;
+}
+.performance-scoreboard .score-step.passed { color: var(--ink-faint); }
+.performance-scoreboard .score-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ink-ghost);
+  opacity: 0.25;
+}
+.performance-scoreboard .score-rail-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: var(--rouge);
+  opacity: 0.5;
+  transition: width 0.8s ease;
+}
+
+/* 继续提示：右下，极轻 */
+.performance-advance {
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.performance-advance .advance-arrow {
+  display: inline-block;
+  width: 0.6rem;
+  height: 1px;
+  background: var(--ink-faint);
+  position: relative;
+  animation: arrowGlide 2.4s ease-in-out infinite;
+}
+.performance-advance .advance-arrow::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-top: 1px solid var(--ink-faint);
+  border-right: 1px solid var(--ink-faint);
+  transform: translateY(-50%) rotate(45deg);
+}
+@keyframes arrowGlide {
+  0%, 100% { transform: translateX(0); opacity: 0.4; }
+  50%      { transform: translateX(4px); opacity: 1; }
+}
+
+/* ================= 痕迹：右侧页边的极淡笔迹 ================= */
+
+.performance-traces {
+  position: fixed;
+  z-index: 6;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  pointer-events: none;
+  max-width: 9rem;
+}
+.performance-traces::before {
+  content: "你留意了";
+  display: block;
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  color: var(--ink-ghost);
+  margin-bottom: 0.4rem;
+  text-align: right;
+  opacity: 0.5;
+}
+.performance-traces .trace-word {
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: rgba(39, 35, 31, 0.32);
+  font-style: italic;
+  text-align: right;
+  transition: color 0.8s ease, text-shadow 0.8s ease;
+}
+.performance-traces[data-highlight="true"] .trace-word {
+  color: var(--rouge);
+  text-shadow: 0 0 8px rgba(166, 93, 104, 0.25);
+}
+
+/* ================= 顶右：极轻的状态文字（替代 badge） ================= */
+
+.performance-state {
+  position: absolute;
+  z-index: 6;
+  top: 2.2rem;
+  left: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  user-select: none;
+  pointer-events: none;
+}
+.performance-state .state-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rouge);
+  box-shadow: 0 0 0 3px rgba(166, 93, 104, 0.12);
+  animation: statePulse 3.2s ease-in-out infinite;
+}
+.performance-state .state-text { font-style: italic; }
+.performance-state .state-text .accent { color: var(--rouge); font-style: normal; }
+.performance-dream .performance-state { color: rgba(214, 173, 133, 0.6); }
+.performance-dream .performance-state .state-dot { background: var(--ochre); box-shadow: 0 0 0 3px rgba(161, 124, 79, 0.18); }
+@keyframes statePulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+/* ================= 响应式：窄屏处理 ================= */
+
+@media (max-width: 720px) {
+  .performance-masthead { padding: 1.4rem 1.2rem 0; font-size: 0.62rem; letter-spacing: 0.32em; }
+  .performance-masthead .masthead-tap { right: 1.2rem; top: 1.4rem; }
+  .performance-stage { width: calc(100vw - 2.4rem); }
+  .performance-original-text { font-size: clamp(1.3rem, 5.5vw, 1.7rem); line-height: 1.8; }
+  .performance-original-hint { font-size: 0.68rem; }
+  .performance-choice-item { font-size: 0.96rem; padding: 0.8rem 0.2rem; }
+  .performance-traces { right: 0.8rem; max-width: 5rem; gap: 0.3rem; }
+  .performance-traces .trace-word { font-size: 0.66rem; }
+  .performance-traces::before { font-size: 0.5rem; }
+  .performance-coda { left: 1rem; right: 1rem; bottom: 0.9rem; }
+  .performance-scoreboard { font-size: 0.5rem; }
+  .performance-state { top: 1.4rem; left: 1rem; }
+  .performance-veil { top: 3.6rem; }
+  .dream-collect-inner { padding: 1.4rem 1.2rem 1.1rem; }
+}
+
+@media (max-height: 800px) {
+  .performance-stage { max-height: 70vh; }
+  .performance-original-text { font-size: clamp(1.2rem, 2.2vw, 1.7rem); line-height: 1.7; }
+  .performance-choice { margin-top: 1.4rem; }
+  .performance-choice-item { padding: 0.7rem 0.3rem; font-size: 0.96rem; }
+  .performance-traces { gap: 0.25rem; }
+  .performance-traces .trace-word { font-size: 0.7rem; }
+}
+
+/* ================= 减弱动效 ================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .performance-scenery::before,
+  .performance::after,
+  .performance-stage,
+  .performance-echo,
+  .performance-choice { animation: none !important; }
+}
+
+/* 舞台光带：极轻的一道斜光，不抢戏 */
+.performance::after {
+  content: "";
+  position: absolute;
+  left: -20%;
+  top: -30%;
+  width: 30%;
+  height: 170%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 250, 232, 0.14), transparent);
+  transform: skewX(-14deg);
+  animation: stageLight 16s ease-in-out infinite;
+}
+@keyframes stageLight {
+  0%, 22%  { transform: translateX(-40vw) skewX(-14deg); opacity: 0; }
+  50%      { opacity: 0.5; }
+  78%, 100% { transform: translateX(150vw) skewX(-14deg); opacity: 0; }
+}
+
+/* ================= 顶部：极轻的题签 ================= */
+
+.performance-masthead {
+  position: relative;
+  z-index: 6;
+  padding: 2.2rem 1.5rem 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1.2rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: var(--ink-faint);
+  user-select: none;
+}
+.performance-masthead .masthead-divider {
+  width: 1.6rem;
+  height: 1px;
+  background: var(--ink-ghost);
+  opacity: 0.5;
+}
+.performance-masthead .masthead-tap {
+  position: absolute;
+  right: 1.5rem;
+  top: 2.2rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 1px;
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-masthead .masthead-tap:hover {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+/* ================= 中部：原文（绝对主角） ================= */
+
+.performance-stage {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(48rem, calc(100vw - 6rem));
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  animation: stageIn 1.1s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes stageIn {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); filter: blur(2px); }
+  to   { opacity: 1; transform: translate(-50%, -50%); filter: none; }
+}
+
+/* 相位小标：第一行（10% 视觉权重） */
+.performance-phase {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: var(--ink-faint);
+  margin-bottom: 1.4rem;
+}
+.performance-phase .phase-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+.performance-phase .phase-tick {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+}
+.performance-chamber .performance-phase { color: var(--indigo); }
+.performance-threshold .performance-phase { color: var(--ochre); }
+.performance-garden .performance-phase,
+.performance-self .performance-phase { color: var(--jade); }
+.performance-dream .performance-phase { color: var(--indigo); }
+.performance-wake .performance-phase,
+.performance-aftermath .performance-phase { color: var(--ink-faint); }
+
+/* 引导句（30% 视觉权重）：薄薄一层，永远在 */
+.performance-guide {
+  max-width: 24rem;
+  margin: 0 auto 1.6rem;
+  font-size: 0.78rem;
+  line-height: 2.1;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.78;
+  transition: opacity 0.6s ease;
+}
+.performance-guide::before,
+.performance-guide::after {
+  content: "—";
+  display: inline-block;
+  margin: 0 0.6em;
+  color: var(--ink-ghost);
+  font-style: normal;
+}
+.performance-dream .performance-guide { color: rgba(230, 220, 200, 0.8); }
+
+/* ================= 司梦低语：AI 思考引导 =================
+   设计参考：
+   - motionsites.ai 的 AI 驱动视觉感 → 思考时的水墨涟漪呼吸
+   - reactbits.dev 的「少即是多」→ 单一克制低语层，无多余装饰
+   - pinterest 的视觉发现引导 → 低语后微弱引导线指向下一步
+   三层视觉权重：whisper-text（30%）→ whisper-guide（12%）→ thinking（极淡） */
+
+.performance-whisper {
+  max-width: 26rem;
+  margin: 0 auto 1.2rem;
+  min-height: 2.4rem;
+  position: relative;
+  animation: whisperIn 0.9s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes whisperIn {
+  from { opacity: 0; transform: translateY(-4px); filter: blur(1px); }
+  to   { opacity: 1; transform: translateY(0); filter: none; }
+}
+
+/* 听：思考中的水墨涟漪（motionsites 的 AI 驱动视觉感）
+   三圈错开呼吸，像戏台在侧耳听 */
+.whisper-thinking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0;
+}
+.whisper-ripple {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-ghost);
+  opacity: 0.4;
+  animation: ripplePulse 2.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+.whisper-ripple-2 { animation-delay: 0.4s; background: var(--jade); }
+.whisper-ripple-3 { animation-delay: 0.8s; background: var(--rouge); }
+@keyframes ripplePulse {
+  0%   { transform: scale(0.6); opacity: 0.18; }
+  50%  { transform: scale(1.5); opacity: 0.72; }
+  100% { transform: scale(0.6); opacity: 0.18; }
+}
+.whisper-thinking-text {
+  font-size: 0.66rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  color: var(--ink-ghost);
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* 语：低语文本（reactbits 的克制单一层，30% 视觉权重） */
+.whisper-body {
+  text-align: center;
+  position: relative;
+}
+.whisper-text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.95;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  font-style: italic;
+  opacity: 0.82;
+  text-wrap: balance;
+  transition: opacity 0.4s ease;
+}
+.whisper-text::before,
+.whisper-text::after {
+  content: "·";
+  display: inline-block;
+  margin: 0 0.5em;
+  color: var(--ink-ghost);
+  font-style: normal;
+  opacity: 0.5;
+}
+.whisper-cursor {
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin-left: 2px;
+  vertical-align: -0.1em;
+  background: var(--rouge);
+  animation: cursorBlink 0.9s steps(2, end) infinite;
+}
+@keyframes cursorBlink {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 引：引导短语（pinterest 的视觉发现引导，12% 视觉权重）
+   低语落定后，一条细线缓缓展开，指向下一步 */
+.whisper-guide {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: var(--ink-ghost);
+  opacity: 0;
+  animation: guideFadeIn 0.6s ease 1.1s forwards;
+}
+.whisper-guide::after {
+  content: "";
+  display: inline-block;
+  width: 1.4rem;
+  height: 1px;
+  margin-left: 0.6em;
+  vertical-align: middle;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: guideLine 1.6s ease 1.3s forwards;
+}
+@keyframes guideFadeIn {
+  to { opacity: 0.6; }
+}
+@keyframes guideLine {
+  to { transform: scaleX(1); }
+}
+
+/* 来源标记：DeepSeek 在场时，顶上一个极淡的胭脂点 */
+.performance-whisper[data-source="deepseek"] .whisper-body::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -0.3rem;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--rouge);
+  opacity: 0.5;
+}
+
+/* tone 微调：不同语气让低语有不同色温 */
+.performance-whisper[data-tone="observe"] .whisper-text { color: var(--ink-soft); }
+.performance-whisper[data-tone="echo"]   .whisper-text { color: var(--rouge); opacity: 0.74; }
+.performance-whisper[data-tone="hold"]   .whisper-text { color: var(--jade); opacity: 0.76; }
+.performance-whisper[data-tone="shift"]  .whisper-text { color: var(--indigo); opacity: 0.76; }
+
+/* phase 配色：让涟漪与当前戏台色调一致 */
+.performance-chamber  .whisper-ripple    { background: var(--indigo); }
+.performance-threshold .whisper-ripple   { background: var(--ochre); }
+.performance-garden .whisper-ripple,
+.performance-self .whisper-ripple        { background: var(--jade); }
+.performance-dream .whisper-ripple       { background: var(--indigo); }
+.performance-wake .whisper-ripple,
+.performance-aftermath .whisper-ripple   { background: var(--ink-faint); }
+
+/* dream 阶段低语更暖（与 dream 的暖色原文协调） */
+.performance-dream .whisper-text { color: rgba(230, 220, 200, 0.82); }
+.performance-dream .whisper-guide { color: rgba(214, 173, 133, 0.5); }
+.performance-dream .whisper-text::before,
+.performance-dream .whisper-text::after { color: rgba(214, 173, 133, 0.4); }
+
+/* 响应式 */
+@media (max-width: 720px) {
+  .performance-whisper { max-width: 22rem; margin-bottom: 0.9rem; }
+  .whisper-text { font-size: 0.78rem; }
+  .whisper-guide { font-size: 0.54rem; }
+}
+@media (max-height: 800px) {
+  .performance-whisper { margin-bottom: 0.8rem; min-height: 2rem; }
+  .whisper-text { font-size: 0.76rem; line-height: 1.8; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .performance-whisper, .whisper-ripple, .whisper-cursor, .whisper-guide {
+    animation: none !important;
+  }
+  .whisper-guide { opacity: 0.6; }
+  .whisper-guide::after { transform: scaleX(1); }
+}
+
+/* 原文（100% 视觉权重）：深墨、端正、留白 */
+.performance-original {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0.6rem 0;
+  position: relative;
+}
+.performance-original-text {
+  margin: 0;
+  font-size: clamp(1.55rem, 2.6vw, 2.3rem);
+  line-height: 1.95;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  text-wrap: balance;
+  font-weight: 500;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.performance-original-text .speaker {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.9rem;
+  border: 1px solid var(--rouge-faint);
+  color: var(--rouge);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  vertical-align: 0.32em;
+}
+.performance-original-hint {
+  display: block;
+  margin-top: 1.1rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+  color: var(--ochre);
+  opacity: 0.78;
+}
+.performance-original-hint::before { content: "〔"; }
+.performance-original-hint::after { content: "〕"; }
+
+.performance-dream .performance-original-text {
+  color: #2A2A35;
+}
+.performance-aftermath .performance-original-text {
+  color: #3A332A;
+}
+
+/* 原文下方的细线：极轻，不是分割，是句读 */
+.performance-original::after {
+  content: "";
+  display: block;
+  width: 2.4rem;
+  height: 1px;
+  margin: 1.6rem auto 0;
+  background: var(--ink-ghost);
+  opacity: 0.5;
+}
+
+/* ================= 选择点：像诗行一样的岔路口 ================= */
+
+.performance-choice {
+  margin: 2.2rem auto 0;
+  max-width: 36rem;
+  width: 100%;
+  animation: choiceIn 0.6s ease both;
+}
+@keyframes choiceIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.performance-choice-hint {
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-bottom: 1.2rem;
+  font-style: italic;
+}
+.performance-choice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.performance-choice-item {
+  display: block;
+  width: 100%;
+  padding: 0.95rem 0.4rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed rgba(39, 35, 31, 0.22);
+  font-family: inherit;
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.4s ease, transform 0.4s ease, letter-spacing 0.4s ease;
+}
+.performance-choice-item:first-child {
+  border-top: 1px dashed rgba(39, 35, 31, 0.22);
+}
+.performance-choice-item:hover {
+  color: var(--rouge);
+  transform: translateY(-2px);
+  letter-spacing: 0.24em;
+}
+.performance-choice-item.chosen {
+  color: var(--rouge);
+  pointer-events: none;
+  opacity: 0.85;
+}
+.performance-choice-item .choice-staging {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+  font-style: italic;
+}
+.performance-dream .performance-choice-item { color: rgba(220, 210, 195, 0.85); border-bottom-color: rgba(220, 210, 195, 0.2); }
+.performance-dream .performance-choice-item:first-child { border-top-color: rgba(220, 210, 195, 0.2); }
+
+/* 划线入口：让读者把"开始"放在任意句 */
+.performance-mark {
+  margin-top: 1.6rem;
+  text-align: center;
+}
+.performance-mark button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--ink-faint);
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-mark button:hover { color: var(--ink); border-color: var(--ink); }
+.performance-mark.is-set button { color: var(--rouge); border-color: var(--rouge); }
+
+/* ================= 今译：辅助，淡墨（30% 视觉权重） ================= */
+
+.performance-vernacular {
+  margin: 1.6rem auto 0;
+  max-width: 30rem;
+  padding: 0.9rem 1.1rem 0.6rem;
+  border-left: 2px solid var(--jade-faint);
+  background: linear-gradient(90deg, var(--jade-haze), transparent 86%);
+  text-align: left;
+}
+.performance-vernacular-label {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.32em;
+  color: var(--jade);
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+.performance-vernacular p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+/* ================= 回声：像注脚一样出现 ================= */
+
+.performance-echo {
+  margin: 0 auto 1.6rem;
+  max-width: 30rem;
+  padding: 0.6rem 1rem;
+  border-left: 1.5px solid var(--rouge-faint);
+  background: var(--rouge-haze);
+  text-align: left;
+  animation: echoIn 0.7s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+@keyframes echoIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 0.92; transform: translateY(0); }
+}
+.performance-echo-trace {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  color: var(--rouge);
+  margin-bottom: 0.4rem;
+}
+.performance-echo-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.3rem;
+}
+.performance-echo-row {
+  font-size: 0.78rem;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.performance-echo-row .echo-tag {
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  font-style: normal;
+  margin-bottom: 0.2rem;
+}
+.performance-echo-row .echo-arrow {
+  color: var(--ink-ghost);
+  font-style: normal;
+  margin-right: 0.4em;
+}
+.performance-echo-reason {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px dotted var(--rouge-faint);
+  font-size: 0.7rem;
+  line-height: 1.8;
+  color: var(--ink-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.performance-echo-toggle {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--ink-ghost);
+  padding: 0.2rem 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+.performance-echo-toggle:hover { color: var(--ink-soft); border-color: var(--ink-soft); }
+
+/* 司梦提示（顶上的红条）：极轻的告知，不抢戏 */
+.performance-veil {
+  position: absolute;
+  z-index: 5;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.66rem;
+  letter-spacing: 0.28em;
+  color: var(--rouge);
+  padding: 0.35rem 1rem;
+  background: rgba(247, 243, 234, 0.7);
+  border-top: 1px solid var(--rouge-faint);
+  border-bottom: 1px solid var(--rouge-faint);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: veilIn 0.8s ease both;
+}
+@keyframes veilIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 司梦收集面板：只在 dream 阶段出现 */
+.dream-collect {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(28, 33, 60, 0.32);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.dream-collect-inner {
+  width: min(28rem, 100%);
+  padding: 1.8rem 1.8rem 1.4rem;
+  background: rgba(247, 243, 234, 0.96);
+  border: 1px solid var(--jade-faint);
+  box-shadow: 0 24px 60px rgba(20, 18, 14, 0.22);
+  text-align: left;
+}
+.dream-collect-inner h3 {
+  margin: 0 0 0.8rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--jade);
+}
+.dream-collect-inner p {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.8;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.dream-collect-inner textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--jade-faint);
+  background: rgba(255, 255, 255, 0.6);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: none;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+.dream-collect-inner textarea:focus { border-color: var(--rouge); }
+.dream-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.4rem;
+  margin-top: 1rem;
+}
+.dream-actions button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  padding: 0.4rem 0.2rem;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+.dream-actions button:hover { color: var(--rouge); border-bottom-color: var(--rouge); }
+.dream-actions button.primary { color: var(--rouge); }
+.dream-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ================= 底部：相位的乐谱 ================= */
+
+.performance-coda {
+  position: absolute;
+  z-index: 5;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 1.4rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* 进度乐谱：五个相位像曲牌 */
+.performance-scoreboard {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-ghost);
+  position: relative;
+}
+.performance-scoreboard .score-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  padding-bottom: 0.6rem;
+  transition: color 0.6s ease;
+}
+.performance-scoreboard .score-step::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 0.6rem;
+  background: var(--ink-ghost);
+  opacity: 0.4;
+  transform: translateX(-50%);
+}
+.performance-scoreboard .score-step.current {
+  color: var(--rouge);
+  font-weight: 500;
+}
+.performance-scoreboard .score-step.current::after {
+  background: var(--rouge);
+  height: 1.2rem;
+  opacity: 0.7;
+}
+.performance-scoreboard .score-step.passed { color: var(--ink-faint); }
+.performance-scoreboard .score-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ink-ghost);
+  opacity: 0.25;
+}
+.performance-scoreboard .score-rail-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: var(--rouge);
+  opacity: 0.5;
+  transition: width 0.8s ease;
+}
+
+/* 继续提示：右下，极轻 */
+.performance-advance {
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.performance-advance .advance-arrow {
+  display: inline-block;
+  width: 0.6rem;
+  height: 1px;
+  background: var(--ink-faint);
+  position: relative;
+  animation: arrowGlide 2.4s ease-in-out infinite;
+}
+.performance-advance .advance-arrow::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-top: 1px solid var(--ink-faint);
+  border-right: 1px solid var(--ink-faint);
+  transform: translateY(-50%) rotate(45deg);
+}
+@keyframes arrowGlide {
+  0%, 100% { transform: translateX(0); opacity: 0.4; }
+  50%      { transform: translateX(4px); opacity: 1; }
+}
+
+/* ================= 痕迹：右侧页边的极淡笔迹 ================= */
+
+.performance-traces {
+  position: fixed;
+  z-index: 6;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  pointer-events: none;
+  max-width: 9rem;
+}
+.performance-traces::before {
+  content: "你留意了";
+  display: block;
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  color: var(--ink-ghost);
+  margin-bottom: 0.4rem;
+  text-align: right;
+  opacity: 0.5;
+}
+.performance-traces .trace-word {
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: rgba(39, 35, 31, 0.32);
+  font-style: italic;
+  text-align: right;
+  transition: color 0.8s ease, text-shadow 0.8s ease;
+}
+.performance-traces[data-highlight="true"] .trace-word {
+  color: var(--rouge);
+  text-shadow: 0 0 8px rgba(166, 93, 104, 0.25);
+}
+
+/* ================= 顶右：极轻的状态文字（替代 badge） ================= */
+
+.performance-state {
+  position: absolute;
+  z-index: 6;
+  top: 2.2rem;
+  left: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--ink-ghost);
+  user-select: none;
+  pointer-events: none;
+}
+.performance-state .state-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rouge);
+  box-shadow: 0 0 0 3px rgba(166, 93, 104, 0.12);
+  animation: statePulse 3.2s ease-in-out infinite;
+}
+.performance-state .state-text { font-style: italic; }
+.performance-state .state-text .accent { color: var(--rouge); font-style: normal; }
+.performance-dream .performance-state { color: rgba(214, 173, 133, 0.6); }
+.performance-dream .performance-state .state-dot { background: var(--ochre); box-shadow: 0 0 0 3px rgba(161, 124, 79, 0.18); }
+@keyframes statePulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+/* ================= 响应式：窄屏处理 ================= */
+
+@media (max-width: 720px) {
+  .performance-masthead { padding: 1.4rem 1.2rem 0; font-size: 0.62rem; letter-spacing: 0.32em; }
+  .performance-masthead .masthead-tap { right: 1.2rem; top: 1.4rem; }
+  .performance-stage { width: calc(100vw - 2.4rem); }
+  .performance-original-text { font-size: clamp(1.3rem, 5.5vw, 1.7rem); line-height: 1.8; }
+  .performance-original-hint { font-size: 0.68rem; }
+  .performance-choice-item { font-size: 0.96rem; padding: 0.8rem 0.2rem; }
+  .performance-traces { right: 0.8rem; max-width: 5rem; gap: 0.3rem; }
+  .performance-traces .trace-word { font-size: 0.66rem; }
+  .performance-traces::before { font-size: 0.5rem; }
+  .performance-coda { left: 1rem; right: 1rem; bottom: 0.9rem; }
+  .performance-scoreboard { font-size: 0.5rem; }
+  .performance-state { top: 1.4rem; left: 1rem; }
+  .performance-veil { top: 3.6rem; }
+  .dream-collect-inner { padding: 1.4rem 1.2rem 1.1rem; }
+}
+
+@media (max-height: 800px) {
+  .performance-stage { max-height: 70vh; }
+  .performance-original-text { font-size: clamp(1.2rem, 2.2vw, 1.7rem); line-height: 1.7; }
+  .performance-choice { margin-top: 1.4rem; }
+  .performance-choice-item { padding: 0.7rem 0.3rem; font-size: 0.96rem; }
+  .performance-traces { gap: 0.25rem; }
+  .performance-traces .trace-word { font-size: 0.7rem; }
+}
+
+/* ================= 减弱动效 ================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .performance-scenery::before,
+  .performance::after,
+  .performance-stage,
+  .performance-echo,
+  .performance-choice { animation: none !important; }
+}

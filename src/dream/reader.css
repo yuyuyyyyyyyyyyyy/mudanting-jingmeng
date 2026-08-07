@@ -1,0 +1,1641 @@
+/* ============================================================
+   翻阅式 AI 阅读《牡丹亭·惊梦》—— 内容页样式
+   与开始页审美对齐：纸色、留白、极淡控件、少量动效、多色调和
+   视觉原则：纸、月、门、花、影 —— 内容页是延续，不是另一套设计
+   ============================================================ */
+
+/* ----- 字体：书宋优先（古文誊印感是内容页的特色，不照搬开始页） ----- */
+@font-face {
+  font-family: 'XinShuSong';
+  src: url('/fonts/XinShuSong-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 内容页自己的颜色：纸偏暖古（不是开始页的奶白，是"翻开古书"的第一眼） */
+.dream-scene {
+  position: fixed;
+  inset: 0;
+  font-family: 'XinShuSong', 'Source Han Serif SC', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  color: #1F1A14;
+  overflow: hidden;
+  transition: opacity 0.9s ease, background-color 1.6s ease;
+  background-color: #F0E9D8;
+  /* 极轻纸纹：与开始页同源（jade / indigo 极淡光斑） */
+  background-image:
+    radial-gradient(ellipse at 14% 8%, rgba(255,255,255,0.5), transparent 44%),
+    radial-gradient(circle at 88% 14%, rgba(88,117,109,0.05), transparent 25%),
+    radial-gradient(circle at 9% 74%, rgba(102,118,139,0.04), transparent 27%),
+    radial-gradient(ellipse at 82% 92%, rgba(161,124,79,0.05), transparent 34%);
+  background-attachment: fixed;
+}
+
+/* ----- 0. 场景画：纯渐变（不再用 mix-blend 图片），但保留色温随幕变化。
+       这是内容页的特色：春朝 → 日暮 → 入梦 → 梦醒，开始页没有。 ----- */
+.scene-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 38%,
+      rgba(255, 251, 240, 0.42) 0%,
+      transparent 58%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, 0.06) 0%,
+      transparent 70%);
+  opacity: 0.85;
+  transform: scale(1.05);
+  transition: opacity 1.2s ease, background 1.4s ease;
+}
+
+/* 春朝：纸暖亮，远处一抹胭脂晴光 */
+.reader-scene--dawn .scene-canvas {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 38%,
+      rgba(255, 251, 235, 0.55) 0%,
+      transparent 58%),
+    radial-gradient(ellipse 50% 35% at 70% 28%,
+      rgba(166, 93, 104, 0.06) 0%,
+      transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(88, 117, 109, 0.08) 0%,
+      transparent 70%);
+}
+
+/* 日暮：暖橙压底，墨色加深 */
+.reader-scene--dusk .scene-canvas {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 38%,
+      rgba(247, 230, 200, 0.45) 0%,
+      transparent 58%),
+    radial-gradient(ellipse 70% 55% at 50% 100%,
+      rgba(161, 124, 79, 0.18) 0%,
+      transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, 0.18) 0%,
+      transparent 75%);
+}
+
+/* 入梦：夜蓝压底，纸转雾青；中央留一片纸色光晕，托住正文与今译 */
+.reader-scene--dream .scene-canvas {
+  background:
+    radial-gradient(ellipse 62% 52% at 50% 40%,
+      rgba(247, 243, 234, 0.26) 0%,
+      transparent 62%),
+    radial-gradient(ellipse 70% 55% at 50% 42%,
+      rgba(38, 46, 58, 0.2) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(20, 24, 30, 0.38) 0%,
+      transparent 75%);
+}
+
+/* 梦醒：纸色退，胭脂残 */
+.dream-scene--wake .scene-canvas {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(255, 245, 230, 0.32) 0%,
+      transparent 58%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, 0.22) 0%,
+      transparent 75%);
+}
+
+/* ----- 1. 墨池：随幕加深（与开始页留白一致 —— 大部分时间是淡的） ----- */
+.ink-pool {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: transparent;
+  transition: background 1.8s ease;
+}
+
+/* 日暮：暖橙 */
+.reader-scene--dusk .ink-pool {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(247, 243, 234, 0.2) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 70% 55% at 50% 55%,
+      rgba(178, 138, 96, 0.14) 0%,
+      rgba(178, 138, 96, 0.05) 35%,
+      transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, 0.32) 0%,
+      transparent 75%);
+}
+
+/* 入梦：夜蓝 */
+.reader-scene--dream .ink-pool {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%,
+      rgba(38, 46, 58, 0.22) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(20, 24, 30, 0.38) 0%,
+      transparent 75%);
+}
+
+/* 梦醒：纸色退、墨沉 */
+.dream-scene--wake .ink-pool {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(247, 243, 234, 0.18) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, 0.42) 0%,
+      transparent 75%);
+}
+
+/* ----- 场景画：只在剧情高潮（入梦）那一页浮现——平时干净纸面，不凑数 ----- */
+.scene-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: var(--scene-opacity, 0.5);
+  animation: sceneIn 2.2s ease both;
+  transition: opacity 1.4s ease;
+  pointer-events: none;
+}
+.reader-scene--dream { --scene-opacity: 0.55; }
+/* 春朝 / 庭园 / 暮色 / 梦醒：各自过关后浮现的场景画——比入梦稍亮，图上纸色光晕托住正文 */
+.reader-scene--spring .scene-image,
+.reader-scene--garden .scene-image,
+.reader-scene--dusk .scene-image,
+.reader-scene--wake .scene-image { --scene-opacity: 0.6; }
+
+@keyframes sceneIn {
+  0%   { opacity: 0; transform: scale(1.045); }
+  100% { opacity: var(--scene-opacity, 0.5); transform: scale(1); }
+}
+
+/* 春朝（起）：纸暖亮，远处一抹胭脂晴光 */
+.reader-scene--spring .scene-canvas {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 38%,
+      rgba(255, 251, 235, 0.5) 0%,
+      transparent 58%),
+    radial-gradient(ellipse 50% 35% at 70% 28%,
+      rgba(166, 93, 104, 0.06) 0%,
+      transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(88, 117, 109, 0.08) 0%,
+      transparent 70%);
+}
+
+/* 庭园（承）：正午暖绿，光斑盛 */
+.reader-scene--garden .scene-canvas {
+  background:
+    radial-gradient(ellipse 65% 55% at 50% 36%,
+      rgba(255, 250, 235, 0.42) 0%,
+      transparent 56%),
+    radial-gradient(ellipse 70% 55% at 50% 100%,
+      rgba(88, 117, 109, 0.16) 0%,
+      transparent 72%),
+    radial-gradient(ellipse 40% 30% at 74% 26%,
+      rgba(161, 124, 79, 0.1) 0%,
+      transparent 70%);
+}
+
+/* 梦醒（合）：纸色退、墨沉 */
+.reader-scene--wake .scene-canvas {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(255, 245, 230, 0.3) 0%,
+      transparent 58%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, 0.24) 0%,
+      transparent 75%);
+}
+.reader-scene--wake .ink-pool {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%,
+      rgba(247, 243, 234, 0.2) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 80% 60% at 50% 100%,
+      rgba(28, 26, 23, 0.4) 0%,
+      transparent 75%);
+}
+
+/* 边角晕影：极淡的"框感"，与开始页的"开门见山"区分开 */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background:
+    radial-gradient(ellipse 88% 84% at 50% 50%,
+      transparent 0%,
+      transparent 62%,
+      rgba(28, 26, 23, 0.10) 95%,
+      rgba(28, 26, 23, 0.18) 100%);
+  pointer-events: none;
+}
+
+/* ----- 2. 顶部控件：与开始页 .controls 完全一致（极淡、无圆角背景、字距宽） ----- */
+.dream-controls {
+  position: fixed;
+  top: 1.1rem;
+  right: 1.3rem;
+  z-index: 50;
+  display: flex;
+  gap: 1.4em;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint, #A79F92);
+  user-select: none;
+}
+.dream-controls button {
+  width: auto;
+  height: auto;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  color: var(--ink-faint, #A79F92);
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.4s ease;
+  display: inline;
+  align-items: inherit;
+  justify-content: inherit;
+}
+.dream-controls button:hover {
+  color: var(--ink-soft, #81796D);
+  background: none;
+}
+.dream-controls button.on {
+  color: var(--ink-soft, #81796D);
+  border-bottom: 1px solid rgba(39, 35, 31, 0.14);
+}
+
+/* 控件配色：与开始页的 .controls button:nth-child 对齐 jade/ochre/rouge/ink */
+.dream-controls button:nth-child(1).on,
+.dream-controls button.fullscreen.on { color: var(--jade, #58756D); border-bottom-color: var(--jade, #58756D); opacity: 0.72; }
+.dream-controls button:nth-child(3).on,
+.dream-controls button.vernacular.on { color: var(--ochre, #A17C4F); border-bottom-color: var(--ochre, #A17C4F); opacity: 0.72; }
+.dream-controls button:nth-child(4).on,
+.dream-controls button.sound.on { color: var(--rouge, #A65D68); border-bottom-color: var(--rouge, #A65D68); opacity: 0.72; }
+.dream-controls button:nth-child(5).on,
+.dream-controls button.motion.on { color: var(--ink, #27231F); border-bottom-color: rgba(39,35,31,0.3); opacity: 0.72; }
+
+/* 全屏旁的小提示：极淡、字距宽，提示但不抢戏。
+   注意：类名不用 dream-hint（ripple.css 里已有同名类，会把文字定位到右下角"下一页"旁）。 */
+.dream-controls .dream-fs-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+/* ⛶ 字形在书宋里 fallback 到系统字体，基线偏下：用 flex 居中 + 微抬，
+   让全屏按钮与「译音动」及小字在同一水平线上 */
+.dream-controls .dream-fs-group .fullscreen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transform: translateY(0.05em);
+}
+.dream-controls .dream-fs-group .fs-hint {
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: rgba(39, 35, 31, 0.32);
+  font-weight: 400;
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: color 0.6s ease;
+}
+.dream-controls .dream-fs-group:hover .fs-hint {
+  color: rgba(39, 35, 31, 0.5);
+}
+
+/* ----- 极淡页码（左下角，与开始页右上角控件呼应极淡权重） ----- */
+.reader-pageno {
+  position: fixed;
+  bottom: 1.4rem;
+  left: 1.8rem;
+  z-index: 40;
+  color: rgba(60, 50, 45, 0.32);
+  font-size: 0.7rem;
+  letter-spacing: 0.32em;
+  font-weight: 300;
+  pointer-events: none;
+}
+
+/* ----- 主体：一页一页读（内容超高时页内滚动；居中） ----- */
+.reader-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(39, 35, 31, 0.16) transparent;
+}
+.reader-stage::-webkit-scrollbar { width: 5px; }
+.reader-stage::-webkit-scrollbar-thumb { background: rgba(39, 35, 31, 0.14); border-radius: 3px; }
+/* 回目引言：极淡的"开卷"小字 */
+.reader-epigraph {
+  margin: 0 auto 2.8rem;
+  max-width: 30em;
+  text-align: center;
+  font-size: 0.86rem;
+  line-height: 2.15;
+  letter-spacing: 0.08em;
+  font-weight: 300;
+  color: rgba(60, 50, 45, 0.5);
+}
+/* 第二回·惊梦：引言在场景图上给足可读性（第一回保持原样） */
+.reader-scene--dream .reader-epigraph,
+.reader-scene--wake .reader-epigraph {
+  font-size: 0.92rem;
+  color: rgba(60, 50, 45, 0.7);
+  text-shadow: 0 0 16px rgba(247, 243, 234, 0.85);
+}
+.reader-line-block {
+  text-align: center;
+  margin: 1.15rem 0;
+}
+/* 逐句今译：读完一句才浮现（学进去：读一句，译一句）
+   比原文轻，但清楚可读：字更大、色更深，带"今译"题签 */
+.reader-line-vernacular {
+  margin-top: 0.35em;
+  font-size: 0.86rem;
+  line-height: 1.9;
+  letter-spacing: 0.05em;
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(60, 50, 45, 0.78);
+  animation: vernacularReveal 0.9s ease both;
+}
+.vernacular-label {
+  font-size: 0.64rem;
+  color: var(--ochre, #A17C4F);
+  letter-spacing: 0.3em;
+  margin-right: 0.7em;
+  font-weight: 300;
+  font-style: normal;
+  opacity: 0.85;
+}
+@keyframes vernacularReveal {
+  0%   { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 回望时刻：正文让位（舞台灯光切换）——字成句浮层不再与原文重叠；
+   只作用于正文 wrapper，翻页入口（reader-turn）保持可见 */
+.reader-page-dimmer {
+  width: 100%;
+  max-width: 32em;
+  transition: opacity 0.9s ease, filter 0.9s ease;
+}
+.reader-page-dimmer--dim {
+  opacity: 0.1;
+  filter: blur(2px);
+}
+
+.reader-page {
+  position: relative;   /* 相会页双声锚定在此容器内（柳生/女声 absolute 跟随原文行） */
+  margin: auto;
+  text-align: center;
+  max-width: 32em;
+  width: 100%;
+  /* 上给顶部控件让位，下给心声字幕 / 翻页题签让位 */
+  padding: 5.5rem 1.8rem 8.5rem;
+}
+
+/* 翻页动效：旧页淡出墨化，新页晕入（与开始页的 leaving 一致语言） */
+.reader-page--in  { animation: readerPageIn 0.9s ease both; }
+.reader-page--out { animation: readerPageOut 0.42s ease both; }
+@keyframes readerPageIn {
+  0%   { opacity: 0; transform: translateY(10px); filter: blur(3px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes readerPageOut {
+  0%   { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-6px); filter: blur(2px); }
+}
+
+/* 回目标记（第一回 · 游园）：与开始页 opening-sub 一致的 ink-soft 极淡 */
+.reader-chapter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: readerFade 1.6s ease forwards;
+}
+/* 朱红小印点（呼应开始页的 opening-title::after 朱文小印） */
+.reader-chapter-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--rouge, #A65D68);
+  opacity: 0.7;
+}
+.reader-chapter-label {
+  font-size: 0.72rem;
+  color: var(--rouge, #A65D68);
+  letter-spacing: 0.5em;
+  font-weight: 300;
+  opacity: 0.72;
+}
+/* 第二回·惊梦：场景图压暗了纸面，章回标记加强可读（第一回不受影响） */
+.reader-scene--dream .reader-chapter-label,
+.reader-scene--wake .reader-chapter-label {
+  font-size: 0.85rem;
+  letter-spacing: 0.34em;
+  font-weight: 400;
+  opacity: 0.95;
+  text-shadow: 0 0 14px rgba(247, 243, 234, 0.9), 0 0 4px rgba(247, 243, 234, 0.7);
+}
+@keyframes readerFade {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ----- 回目页（章回体）：与开始页大标题一致的字距与字号 ----- */
+.reader-chapterpage {
+  text-align: center;
+  animation: readerPageIn 1s ease both;
+}
+.reader-chapterpage-title {
+  font-size: clamp(2.6rem, 7vw, 4.2rem);
+  color: var(--ink, #27231F);
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-shadow:
+    0.04em 0.02em 0 rgba(166, 93, 104, 0.10),
+    -0.02em -0.015em 0 rgba(88, 117, 109, 0.08);
+}
+.reader-chapterpage-sub {
+  margin-top: 2.4rem;
+  font-size: 0.78rem;
+  color: var(--indigo, #66768B);
+  letter-spacing: 0.5em;
+  text-indent: 0.5em;
+  font-weight: 300;
+}
+.reader-chapterpage-epigraph {
+  margin: 4rem auto 0;
+  max-width: 28em;
+  font-size: 0.92rem;
+  color: var(--ink-soft, #81796D);
+  line-height: 2.15;
+  letter-spacing: 0.1em;
+  font-weight: 300;
+}
+
+/* 一页的诗句：与开始页一致的"文字是绝对主角" */
+.reader-line {
+  font-size: 1.85rem;
+  line-height: 2.1;
+  letter-spacing: 0.16em;
+  color: var(--ink, #27231F);
+  text-shadow: 0 0 22px rgba(247, 243, 234, 0.55);
+  margin: 0.4rem 0;
+}
+
+/* 字：划过 = 读过（淡墨）；停留 = 胭脂 */
+.rchar {
+  display: inline-block;
+  position: relative;
+  padding: 0 0.06em;
+  color: inherit;  /* 继承 .reader-line 的场景墨色；read/hover/dwelled 显式覆盖 */
+  cursor: default;
+  user-select: none;
+  transition: color 0.5s ease, text-shadow 0.5s ease, transform 0.3s ease;
+}
+/* 墨晕只在悬停时泛起，离开即散——不留阴影 */
+.rchar::after {
+  content: '';
+  position: absolute;
+  inset: 22% 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(39, 35, 31, 0.10) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.4);
+  pointer-events: none;
+  transition: opacity 0.8s ease, transform 1.6s ease;
+}
+.rchar:hover::after {
+  opacity: 1;
+  transform: scale(1);
+}
+/* 划过（读过了）：字淡成墨色；字底一道极淡墨痕，像笔尖走过，读完的一笔 */
+.rchar--read {
+  color: rgba(60, 50, 45, 0.42);
+}
+.rchar--read::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 0.14em;
+  height: 1px;
+  background: rgba(39, 35, 31, 0.15);
+  border-radius: 1px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: readInk 0.6s ease forwards;
+}
+@keyframes readInk {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+/* 当前悬停：胭脂色浮起（rouge 而非纯红） */
+.rchar:hover {
+  color: var(--rouge, #A65D68);
+  text-shadow: 0 0 14px rgba(166, 93, 104, 0.32), 0 0 4px rgba(166, 93, 104, 0.6);
+  transform: translateY(-1px);
+}
+/* 停留过（触发心声）：胭脂浸透 */
+.rchar--dwelled {
+  color: var(--rouge, #A65D68);
+  text-shadow: 0 0 18px rgba(166, 93, 104, 0.5), 0 0 5px rgba(166, 93, 104, 0.7);
+}
+
+/* 起承转合：正文诗句的墨色 / 字距 / 光晕随场景而变——不只是画面变，文字也在变 */
+.reader-line {
+  transition: color 1.2s ease, letter-spacing 1.2s ease, text-shadow 1.2s ease;
+}
+.reader-scene--spring .reader-line {
+  color: var(--ink, #27231F);
+  text-shadow: 0 0 22px rgba(247, 243, 234, 0.55);
+}
+.reader-scene--garden .reader-line {
+  color: #2E3228;
+  letter-spacing: 0.17em;
+  text-shadow: 0 0 26px rgba(88, 117, 109, 0.18);
+}
+.reader-scene--dusk .reader-line {
+  color: #5E4632;
+  letter-spacing: 0.18em;
+  text-shadow: 0 0 30px rgba(161, 124, 79, 0.26);
+}
+.reader-scene--dream .reader-line {
+  color: #3A4740;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 34px rgba(102, 118, 139, 0.32), 0 0 10px rgba(247, 243, 234, 0.5);
+}
+.reader-scene--wake .reader-line {
+  color: rgba(60, 50, 45, 0.8);
+  letter-spacing: 0.16em;
+  text-shadow: 0 2px 14px rgba(28, 26, 23, 0.18), 0 0 14px rgba(247, 243, 234, 0.7);
+}
+
+/* 今译：极淡、25% 视觉权重（与开始页 vernacular 同思路） */
+.reader-vernacular {
+  margin-top: 1.6rem;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 30em;
+  padding: 0.6em 1.1em 0.7em;
+  font-size: 0.82rem;
+  line-height: 2.1;
+  color: rgba(60, 50, 45, 0.55);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  font-weight: 300;
+  border-left: 2px solid rgba(88, 117, 109, 0.22);
+  background: linear-gradient(90deg, rgba(88, 117, 109, 0.05), transparent 86%);
+}
+
+/* 读这一句要知道：与开始页 margin-question 一致的"页边低声"语言 */
+.reader-note {
+  margin: 4rem auto 0;     /* 加大顶部留白，让相会页女声浮层能完整落进末句与点拨之间，不压大字行（原 2.4rem，留白 ~56px 不够放浮层 ~50px + gap） */
+  padding: 0.4em 1.1em;
+  max-width: 28em;
+  font-size: 0.78rem;
+  color: rgba(60, 50, 45, 0.5);
+  letter-spacing: 0.04em;
+  line-height: 2.1;
+  font-weight: 300;
+  border-left: 2px solid rgba(166, 93, 104, 0.18);
+  background: linear-gradient(90deg, rgba(166, 93, 104, 0.04), transparent 80%);
+  opacity: 0;
+  animation: readerFade 1.4s ease 0.5s forwards;
+}
+.reader-note-label {
+  color: var(--rouge, #A65D68);
+  letter-spacing: 0.32em;
+  margin-right: 0.6em;
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+.reader-note-text {
+  font-style: normal;
+}
+
+/* 她把门：她问，你答（Choice cards：透明底、虚线底线、胭脂悬停上移） */
+.reader-gate {
+  margin: 2.4rem auto 0;
+  max-width: 27em;
+  text-align: left;
+}
+.gate-question {
+  font-size: 0.95rem;
+  color: var(--ink, #27231F);
+  letter-spacing: 0.06em;
+  line-height: 1.9;
+  margin: 0 0 1.1em;
+}
+.gate-label {
+  display: inline-block;
+  font-size: 0.68rem;
+  color: var(--rouge, #A65D68);
+  letter-spacing: 0.3em;
+  margin-right: 0.7em;
+  opacity: 0.75;
+}
+/* 过关态的行动引导：她给了任务，你要在这一页的原文里点字 */
+.gate-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: rgba(60, 50, 45, 0.5);
+  letter-spacing: 0.1em;
+  line-height: 1.9;
+  animation: readerFade 0.8s ease both;
+}
+/* 她等你去点时：正文的字轻轻呼吸，提示"在这页点一个字给她" */
+.reader-page:has(.gate-hint) .rchar {
+  cursor: pointer;
+  animation: gatePulse 2.4s ease-in-out infinite;
+}
+@keyframes gatePulse {
+  0%, 100% { text-shadow: 0 0 10px rgba(166, 93, 104, 0); }
+  50%      { text-shadow: 0 0 14px rgba(166, 93, 104, 0.22); }
+}
+.gate-reply {
+  font-size: 0.92rem;
+  color: var(--ink, #27231F);
+  line-height: 1.95;
+  margin: 0;
+  animation: readerFade 0.8s ease both;
+}
+
+/* ----- 翻页（右下角，题签式虚线入口） ----- */
+.reader-turn {
+  position: fixed;
+  right: 2rem;
+  bottom: 1.6rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+.reader-turn-btn {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed rgba(39, 35, 31, 0.22);
+  color: rgba(60, 50, 45, 0.55);
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  cursor: pointer;
+  padding: 0 0 0.25em;
+  transition: color 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
+}
+.reader-turn-btn:hover:not(:disabled) {
+  color: var(--rouge, #A65D68);
+  border-bottom-color: rgba(166, 93, 104, 0.5);
+}
+.reader-turn-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.reader-turn-btn--prev {
+  font-size: 1.2rem;
+  border: 0;
+  padding: 0 0.35em;
+  letter-spacing: 0;
+}
+/* 她把门：她应允后就绪——题签由虚线转实，胭脂点亮，轻轻呼吸提示可走 */
+.reader-turn-btn--ready {
+  color: var(--rouge, #A65D68);
+  border-bottom-color: rgba(166, 93, 104, 0.5);
+  border-bottom-style: solid;
+  animation: turnReadyPulse 2.2s ease-in-out infinite;
+}
+@keyframes turnReadyPulse {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+/* ----- 入场引导卡（第一回保持原样：与 AI 面板同左对齐，内容完整显示） ----- */
+.dream-intro {
+  position: fixed;
+  top: 2.4rem;
+  left: 1.2rem;
+  z-index: 45;
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 0.6em 1em 0.6em 0.4em;
+  max-width: 22em;
+  box-sizing: border-box;
+  border-left: 2px solid var(--hairline, rgba(39,35,31,0.14));
+  background: transparent;
+  border-radius: 0;
+  animation: readerFade 1.2s ease both;
+}
+.intro-title {
+  font-size: 0.72rem;
+  color: var(--ink-soft, #81796D);
+  letter-spacing: 0.42em;
+  margin-bottom: 0.5em;
+  font-weight: 300;
+}
+.intro-line {
+  font-size: 0.78rem;
+  color: rgba(60, 50, 45, 0.55);
+  letter-spacing: 0.18em;
+  line-height: 1.85;
+  font-weight: 300;
+}
+.intro-line-soft {
+  color: var(--ink-faint, #A79F92);
+  margin-top: 0.2em;
+  letter-spacing: 0.28em;
+}
+.intro-kunqu {
+  margin-top: 0.9em;
+  padding-top: 0.8em;
+  border-top: 1px dashed rgba(39, 35, 31, 0.12);
+}
+.intro-kunqu-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  letter-spacing: 0.4em;
+  color: rgba(166, 93, 104, 0.72);
+  border: 1px solid rgba(166, 93, 104, 0.3);
+  border-radius: 2px;
+  padding: 0.12em 0.7em;
+  margin-bottom: 0.7em;
+}
+.intro-kunqu p {
+  font-size: 0.72rem;
+  line-height: 1.9;
+  letter-spacing: 0.12em;
+  color: rgba(60, 50, 45, 0.5);
+  margin: 0 0 0.45em;
+}
+.intro-kunqu p:last-child { margin-bottom: 0; }
+
+/* ----- 翻页观察：她觉察你这一页怎么读（动效 + 文字，极淡） ----- */
+.page-note {
+  position: fixed;
+  bottom: 8.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 36;
+  text-align: center;
+  pointer-events: none;
+  animation: noteIn 4.2s ease forwards;
+}
+.page-note-text {
+  display: inline-block;
+  font-size: 0.88rem;
+  color: var(--indigo, #66768B);
+  font-family: 'XinShuSong', 'Source Han Serif SC', serif;
+  letter-spacing: 0.14em;
+  padding: 0.35em 1.1em;
+  border-bottom: 1px solid rgba(102, 118, 139, 0.22);
+  background: rgba(247, 243, 234, 0.5);
+  /* 不用 backdrop-filter：opacity 动画 + blur 重算会闪烁 */
+  border-radius: 1px;
+  opacity: 0.85;
+}
+@keyframes noteIn {
+  0%   { opacity: 0; transform: translate(-50%, 10px); filter: blur(3px); }
+  15%  { opacity: 0.95; transform: translate(-50%, 0); filter: blur(0); }
+  85%  { opacity: 0.95; transform: translate(-50%, 0); filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, 0); filter: blur(1px); }
+}
+
+/* ----- 相识簿：你停过的字 + 她说的话，攒成一场对话（常驻，不淡出） ----- */
+.dialog-book {
+  position: fixed;
+  right: 2rem;
+  bottom: 10.5rem;
+  z-index: 33;
+  max-width: 15em;
+  text-align: right;
+  pointer-events: none;
+}
+.dialog-book-head {
+  font-size: 0.62rem;
+  color: rgba(60, 50, 45, 0.42);
+  letter-spacing: 0.3em;
+  padding-bottom: 0.4em;
+  margin-bottom: 0.55em;
+  border-bottom: 1px solid rgba(39, 35, 31, 0.12);
+  font-weight: 300;
+}
+.dialog-book-head strong {
+  color: var(--rouge, #A65D68);
+  font-weight: 400;
+  font-size: 0.78rem;
+}
+.dialog-empty {
+  font-size: 0.66rem;
+  color: rgba(60, 50, 45, 0.32);
+  letter-spacing: 0.2em;
+  font-style: italic;
+  text-align: right;
+}
+.dialog-entry {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0.5em;
+  margin-top: 0.6em;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  animation: entryIn 0.8s ease both;
+}
+.dialog-entry-char {
+  color: var(--rouge, #A65D68);
+  opacity: 0.7;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  font-weight: 300;
+}
+.dialog-entry-voice {
+  color: rgba(60, 50, 45, 0.78);
+  font-style: italic;
+  letter-spacing: 0.06em;
+  text-align: right;
+  max-width: 11em;
+  line-height: 1.7;
+  font-size: 0.78rem;
+}
+/* 回望句更实：像是她把一路的话拢成了一句 */
+.dialog-entry--milestone .dialog-entry-voice {
+  color: var(--ink, #27231F);
+  font-style: normal;
+}
+@keyframes entryIn {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ----- 相会页双声（惊梦·山桃红）：柳生（上·青墨）与杜丽娘（下·胭脂）
+        文档流槽位：柳生在章节头与正文之间、女声在正文与过关提示之间。
+        自然占位、随内容推挤，绝不压正文——不依赖 JS 定位。 ----- */
+.dream-respond {
+  position: relative;
+  box-sizing: border-box;
+  width: min(100%, 600px);
+  min-height: 58px;
+  margin: 10px auto 24px;
+  padding: 8px 18px;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+.dream-respond--show {
+  opacity: 1;
+  visibility: visible;
+}
+.dream-respond-text {
+  display: inline-block;
+  font-size: 1.1rem;
+  color: var(--dream-cool, #6a7a7a);
+  font-family: 'XinShuSong', 'Source Han Serif SC', serif;
+  letter-spacing: 0.16em;
+  font-weight: 400;
+  line-height: 1.5;
+  padding: 0.2em 0.5em;
+  text-shadow: 0 0 14px rgba(247, 243, 234, 0.9), 0 0 4px rgba(247, 243, 234, 0.55);
+}
+/* 关系小标（旧版「— 对望」同款）：青墨、轻、居中 */
+.dream-respond-relation {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.26em;
+  color: rgba(115, 128, 128, 0.62);
+  margin-top: 0.4em;
+  font-weight: 300;
+  text-shadow: 0 0 10px rgba(247, 243, 234, 0.8);
+}
+/* respondFade 已弃用：柳生改用 .dream-respond--show 的 opacity 过渡，避免 forwards 停在 0 */
+
+/* ----- 杜丽娘心声（文档流槽位，--show 显隐，transition 平滑无闪烁） ----- */
+.inner-voice {
+  position: relative;
+  box-sizing: border-box;
+  width: min(100%, 620px);
+  min-height: 72px;
+  margin: 30px auto 22px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+  /* 覆盖旧 ripple.css 残留的 voiceFade 动画：槽位用 opacity 过渡控制显隐 */
+  animation: none;
+}
+.inner-voice--show {
+  opacity: 1;
+  visibility: visible;
+}
+.inner-voice-char {
+  font-size: 0.8rem;
+  color: var(--rouge, #A65D68);
+  letter-spacing: 0.16em;
+  font-weight: 300;
+  opacity: 0.62;
+  flex: none;
+}
+.inner-voice-text {
+  display: inline-block;
+  min-width: 0;
+  font-size: 1.06rem;
+  color: var(--rouge, #A65D68);
+  font-family: 'XinShuSong', 'Source Han Serif SC', serif;
+  letter-spacing: 0.16em;
+  font-weight: 300;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  padding: 0.2em 0.5em;
+  text-shadow: 0 0 14px rgba(247, 243, 234, 0.9), 0 0 4px rgba(247, 243, 234, 0.55);
+}
+/* 停留深度：第二层（深驻 4s）稍大 */
+.inner-voice--l2 .inner-voice-text {
+  font-size: 1.16rem;
+  color: var(--rouge, #A65D68);
+}
+
+/* ============================================================
+   左下读书卡片：她在旁看你读书，说给你听
+   设计：高级感极简 —— 一片安静的纸，一缕胭脂点亮
+   去装饰、留白、淡墨；存在感靠纸面与阴影，不靠边框与印章
+   ============================================================ */
+.dream-chat {
+  position: fixed;
+  left: 1.2rem;
+  bottom: 3.2rem;
+  z-index: 44;
+  width: min(22em, 33vw);
+  min-width: 16em;
+  /* 固定高度：保持低矮，消息再多也不长高，只在内部滚动 */
+  height: min(30vh, 18em);
+  display: flex;
+  flex-direction: column;
+  background: rgba(253, 250, 243, 0.9);
+  border: 1px solid rgba(39, 35, 31, 0.08);
+  border-radius: 3px;
+  box-shadow:
+    0 1px 2px rgba(39, 35, 31, 0.03),
+    0 10px 28px rgba(39, 35, 31, 0.06),
+    0 26px 60px rgba(39, 35, 31, 0.05);
+  padding: 1.05em 1.15em 0.8em 1.25em;
+}
+/* 唯一的重色亮点：顶部一瞥胭脂短线，如极简题签的一笔 */
+.dream-chat::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 1.25em;
+  width: 1.8em;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, rgba(166, 93, 104, 0.65), rgba(166, 93, 104, 0.08));
+}
+.dream-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  font-size: 0.7rem;
+  color: rgba(60, 50, 45, 0.62);
+  letter-spacing: 0.32em;
+  font-weight: 400;
+  padding: 0 0.1em 0.55em 0.1em;
+  margin-bottom: 0.45em;
+  border-bottom: 1px solid rgba(39, 35, 31, 0.06);
+}
+.dream-chat-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rouge, #A65D68);
+  opacity: 0.75;
+  position: relative;
+  animation: chatDotPulse 3.6s ease-in-out infinite;
+}
+@keyframes chatDotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(166, 93, 104, 0.2); }
+  50%      { box-shadow: 0 0 0 3.5px rgba(166, 93, 104, 0.05); }
+}
+.dream-chat-msgs {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(39, 35, 31, 0.16) transparent;
+}
+.dream-chat-msgs::-webkit-scrollbar { width: 4px; }
+.dream-chat-msgs::-webkit-scrollbar-thumb { background: rgba(39, 35, 31, 0.16); border-radius: 2px; }
+.chat-empty {
+  font-size: 0.7rem;
+  color: rgba(60, 50, 45, 0.42);
+  letter-spacing: 0.16em;
+  line-height: 1.75;
+  font-weight: 300;
+  padding: 0.4em 0.2em;
+  font-style: italic;
+}
+.chat-msg {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  margin: 0.55em 0;
+  font-size: 0.86rem;
+  line-height: 1.85;
+  letter-spacing: 0.04em;
+  animation: chatIn 0.5s ease both;
+}
+.chat-msg--user {
+  flex-direction: row-reverse;
+}
+.chat-msg-name {
+  flex: none;
+  font-size: 0.66rem;
+  letter-spacing: 0.3em;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.chat-msg--her .chat-msg-name {
+  color: var(--rouge, #A65D68);
+  opacity: 0.85;
+}
+.chat-msg--user .chat-msg-name {
+  color: var(--indigo, #66768B);
+  opacity: 0.75;
+}
+.chat-msg-text {
+  max-width: 26em;
+  color: rgba(60, 50, 45, 0.85);
+  font-weight: 300;
+}
+.chat-msg--user .chat-msg-text {
+  color: var(--indigo, #66768B);
+  font-style: italic;
+}
+/* 总结：她拢起读过的字说成一段话（比心声更重的一缕墨） */
+.chat-msg--rollup .chat-msg-text {
+  color: var(--ink, #27231F);
+  font-size: 0.96rem;
+  line-height: 1.95;
+  letter-spacing: 0.06em;
+  font-style: normal;
+  padding: 0.5em 0.6em 0.5em 0.8em;
+  border-left: 1.5px solid rgba(166, 93, 104, 0.4);
+  background: linear-gradient(90deg, rgba(166, 93, 104, 0.045), transparent 85%);
+  font-weight: 400;
+}
+.chat-typing {
+  font-size: 0.66rem;
+  color: rgba(60, 50, 45, 0.4);
+  letter-spacing: 0.16em;
+  font-style: italic;
+  padding: 0.2em 0;
+}
+.dream-chat-input {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  margin-top: 0.55em;
+  padding-top: 0.5em;
+  border-top: 1px solid rgba(39, 35, 31, 0.06);
+}
+.dream-chat-input input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(166, 93, 104, 0.28);
+  border-radius: 0;
+  padding: 0.32em 0.1em;
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--ink, #27231F);
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+.dream-chat-input input::placeholder {
+  color: rgba(60, 50, 45, 0.36);
+  font-weight: 300;
+  letter-spacing: 0.1em;
+}
+.dream-chat-input input:focus {
+  border-bottom-color: rgba(166, 93, 104, 0.55);
+}
+.dream-chat-input button {
+  flex: none;
+  background: transparent;
+  border: 0;
+  color: rgba(166, 93, 104, 0.75);
+  font-family: inherit;
+  font-size: 0.74rem;
+  letter-spacing: 0.3em;
+  cursor: pointer;
+  padding: 0.2em 0.1em;
+  transition: color 0.3s ease;
+}
+.dream-chat-input button:hover:not(:disabled) {
+  color: var(--rouge, #A65D68);
+}
+.dream-chat-input button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+@keyframes chatIn {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 入梦：卡片随场景色调微变，纸色压暗一缕 */
+.reader-scene--dream .dream-chat {
+  background:
+    radial-gradient(ellipse 80% 30% at 50% 0%, rgba(115, 128, 128, 0.07), transparent 65%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(102, 118, 139, 0.05), transparent 60%),
+    linear-gradient(170deg, rgba(248, 244, 232, 0.93) 0%, rgba(238, 230, 215, 0.88) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 215, 200, 0.5),
+    inset 0 -1px 0 rgba(28, 26, 23, 0.04),
+    0 1px 2px rgba(28, 26, 23, 0.06),
+    0 8px 24px rgba(28, 26, 23, 0.12);
+}
+.reader-scene--dream .dream-chat::before {
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(115, 128, 128, 0.3) 8%,
+    rgba(115, 128, 128, 0.55) 50%,
+    rgba(115, 128, 128, 0.3) 92%,
+    transparent 100%);
+}
+/* 梦醒：纸色更素，胭脂淡 */
+.dream-scene--wake .dream-chat {
+  background:
+    radial-gradient(ellipse 80% 30% at 50% 0%, rgba(161, 124, 79, 0.05), transparent 65%),
+    linear-gradient(170deg, rgba(248, 244, 232, 0.92) 0%, rgba(236, 230, 218, 0.86) 100%);
+}
+
+/* ----- 痕迹层：被停留过的字下方留胭脂墨渍（极淡） ----- */
+.trace-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 28;
+}
+.trace-mark {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(166, 93, 104, 0.42) 0%,
+    rgba(166, 93, 104, 0.18) 35%,
+    rgba(166, 93, 104, 0.04) 70%,
+    transparent 100%);
+  transform: translate(-50%, -50%);
+  animation: traceSeep 3s ease-out forwards;
+  mix-blend-mode: multiply;
+  filter: blur(0.3px);
+}
+@keyframes traceSeep {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  60%  { opacity: 0.8; }
+  100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1.8); filter: blur(1.2px); }
+}
+
+/* ----- 涟漪层：极淡、稍慢（与开始页月、门元素同语言） ----- */
+.ripple-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+.ripple {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.ripple::before, .ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(166, 93, 104, 0.42);
+  background: transparent;
+  transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
+  animation: rippleOut 3.6s ease-out forwards;
+}
+.ripple::after {
+  animation-delay: 0.5s;
+  border-color: rgba(166, 93, 104, 0.24);
+}
+@keyframes rippleOut {
+  0%   { width: 0;    height: 0;    opacity: 0.7; }
+  60%  { opacity: 0.28; }
+  100% { width: 480px; height: 480px; opacity: 0; }
+}
+
+/* ----- 飘落的花瓣：减少到 6 片以内，呼应开始页 prologue-peony 的极疏密度 ----- */
+.petal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+.petal {
+  position: absolute;
+  width: 7px;
+  height: 10px;
+  border-radius: 50% 0 50% 50%;
+  background: radial-gradient(ellipse at 30% 30%,
+    rgba(232, 168, 178, 0.55) 0%,
+    rgba(166, 93, 104, 0.32) 60%,
+    transparent 100%);
+  animation: petalFall var(--petal-duration, 16s) linear infinite;
+  animation-delay: var(--petal-delay, 0s);
+  transform: rotate(var(--petal-rotate, 0deg));
+  opacity: var(--petal-opacity, 0.42);
+}
+@keyframes petalFall {
+  0%   { transform: translate(0, -20px) rotate(0deg); opacity: 0; }
+  8%   { opacity: var(--petal-opacity, 0.42); }
+  90%  { opacity: var(--petal-opacity, 0.42); }
+  100% { transform: translate(var(--petal-drift, 60px), calc(100vh + 30px)) rotate(540deg); opacity: 0; }
+}
+
+/* ----- 墨粒子：从 10+ 减到 4-5，更慢更疏；保持"墨在水中散" ----- */
+.motes {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+.mote {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(28, 26, 23, 0.32) 0%, rgba(28, 26, 23, 0.06) 60%, transparent 100%);
+  animation: moteFloat var(--mote-duration, 22s) linear infinite;
+  animation-delay: var(--mote-delay, 0s);
+  opacity: 0;
+}
+@keyframes moteFloat {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  10%  { opacity: var(--mote-opacity, 0.4); }
+  85%  { opacity: var(--mote-opacity, 0.4); }
+  100% { transform: translateY(calc(-100vh - 40px)) translateX(var(--mote-drift, 12px)); opacity: 0; }
+}
+
+/* ----- 第三幕 · 收束：她看见你了 ----- */
+.final-voice {
+  position: fixed;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 60;
+  text-align: center;
+  pointer-events: none;
+  animation: finalVoiceIn 3s ease both;
+  max-width: 80vw;
+}
+.final-voice-mark {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--ink-soft, #81796D);
+  letter-spacing: 0.6em;
+  margin-bottom: 1.2em;
+  font-weight: 300;
+  opacity: 0.62;
+}
+.final-voice-text {
+  display: block;
+  font-size: 1.7rem;
+  color: var(--ink, #27231F);
+  font-family: 'XinShuSong', 'Source Han Serif SC', serif;
+  letter-spacing: 0.3em;
+  line-height: 1.7;
+  text-shadow: 0 0 26px rgba(247, 243, 234, 0.9), 0 0 8px rgba(166, 93, 104, 0.18);
+  opacity: 0.85;
+}
+@keyframes finalVoiceIn {
+  0%   { opacity: 0; }
+  25%  { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.final-voice-stats {
+  display: block;
+  margin-top: 2em;
+  font-size: 0.72rem;
+  color: var(--ink-soft, #81796D);
+  letter-spacing: 0.16em;
+  font-style: italic;
+  font-weight: 300;
+  opacity: 0.72;
+}
+
+/* ----- 合卷入口（右下角题签） ----- */
+.final-close {
+  position: fixed;
+  right: 2rem;
+  bottom: 1.6rem;
+  z-index: 60;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed rgba(39, 35, 31, 0.22);
+  color: rgba(60, 50, 45, 0.55);
+  text-align: right;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+  padding: 0 0 0.3em;
+  line-height: 1.5;
+}
+.final-close:hover {
+  opacity: 1;
+  color: var(--rouge, #A65D68);
+  border-bottom-color: rgba(166, 93, 104, 0.5);
+}
+.final-close-main {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  font-family: inherit;
+}
+.final-close-sub {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--ink-faint, #A79F92);
+  font-style: italic;
+  margin-top: 0.2em;
+}
+
+/* ----- 衔字：上一页停过的字，跟着你走到这一页的纸角 ----- */
+.carry-marks {
+  position: fixed;
+  top: 4.6rem;
+  right: 1.7rem;
+  z-index: 34;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28em;
+  pointer-events: none;
+  animation: carryIn 1.2s ease both;
+}
+.carry-mark {
+  font-size: 0.92rem;
+  line-height: 1;
+  color: rgba(39, 35, 31, 0.2);
+  font-family: 'XinShuSong', serif;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 12px rgba(247, 243, 234, 0.75);
+}
+@keyframes carryIn {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ----- 挽留门：按住牡丹，替她留住春（长按蓄力） ----- */
+.rchar--holding {
+  color: rgba(166, 93, 104, 0.92) !important;
+  animation: holdFill var(--hold-ms, 1.6s) ease forwards;
+}
+@keyframes holdFill {
+  0%   { text-shadow: 0 0 0 rgba(166, 93, 104, 0); }
+  100% { text-shadow: 0 0 16px rgba(166, 93, 104, 0.65), 0 0 3px rgba(166, 93, 104, 0.5); }
+}
+
+/* ----- 相识簿里的受赠条目：她送你的字 ----- */
+.dialog-entry--gift .dialog-entry-char {
+  color: rgba(166, 93, 104, 0.8);
+}
+.dialog-entry-gift {
+  font-size: 0.56rem;
+  letter-spacing: 0.2em;
+  color: rgba(166, 93, 104, 0.72);
+  border: 1px solid rgba(166, 93, 104, 0.32);
+  border-radius: 2px;
+  padding: 0.06em 0.4em;
+  margin-right: 0.5em;
+  flex: none;
+  align-self: center;
+}
+
+/* ----- 曲终一问：她站出来，同你说那句压了一路的话 ----- */
+@keyframes finaleIn {
+  0%   { opacity: 0; }
+  40%  { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ----- 曲终一问：她站出来，同你说那句压了一路的话 ----- */
+/* 放在左上（与提示/AI 面板同一列），不在底部居中——不与左下聊天面板重叠 */
+.finale-question {
+  position: fixed;
+  top: 2.4rem;
+  left: 1.2rem;
+  z-index: 56;
+  width: min(22em, 33vw);
+  min-width: 16em;
+  background: rgba(247, 243, 234, 0.74);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(39, 35, 31, 0.1);
+  border-radius: 2px;
+  padding: 1.5em 2em 1.25em;
+  text-align: center;
+  animation: finaleIn 1.8s ease both;
+  box-shadow: 0 10px 34px rgba(28, 26, 23, 0.09);
+}
+.fq-mark {
+  font-size: 0.6rem;
+  letter-spacing: 0.45em;
+  color: rgba(166, 93, 104, 0.72);
+  margin-bottom: 1em;
+  font-weight: 400;
+}
+.fq-question {
+  font-size: 1.05rem;
+  line-height: 2;
+  letter-spacing: 0.11em;
+  color: rgba(39, 35, 31, 0.86);
+  font-family: 'XinShuSong', serif;
+  margin-bottom: 1.2em;
+}
+.fq-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed rgba(39, 35, 31, 0.35);
+  padding: 0.5em 0.2em;
+  font-size: 0.92rem;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  color: rgba(39, 35, 31, 0.88);
+  outline: none;
+  text-align: center;
+}
+.fq-input::placeholder { color: rgba(60, 50, 45, 0.4); }
+.fq-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.8em;
+  margin-top: 1.1em;
+}
+.fq-submit {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed rgba(166, 93, 104, 0.5);
+  color: rgba(166, 93, 104, 0.85);
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  padding: 0.2em 0.1em 0.3em;
+  transition: color 0.3s, border-color 0.3s;
+}
+.fq-submit:hover { color: #A65D68; border-bottom-color: #A65D68; }
+.fq-submit:disabled { opacity: 0.35; cursor: default; }
+.fq-done {
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  color: rgba(60, 50, 45, 0.55);
+  line-height: 1.9;
+}
+
+/* ----- 退场：她开口问压了一路的话——正文与旁枝淡出，只留背景、问题卡片与回到原文 ----- */
+.dream-scene--finale .reader-stage,
+.dream-scene--finale .dream-controls,
+.dream-scene--finale .dialog-book,
+.dream-scene--finale .dream-chat,
+.dream-scene--finale .carry-marks,
+.dream-scene--finale .dream-respond,
+.dream-scene--finale .inner-voice {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.8s ease;
+}
+/* 退场时背景场景画更实（动画 fill 值优先，需 !important 覆盖） */
+.dream-scene--finale .scene-image {
+  opacity: 0.78 !important;
+}
+
+/* ----- 相识簿里的曲牌句位（板眼：这一句是第几句） ----- */
+.dialog-entry-qupai {
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  color: rgba(129, 121, 109, 0.75);
+  border-bottom: 1px dotted rgba(129, 121, 109, 0.35);
+  padding: 0 0.1em 0.1em;
+  margin-right: 0.55em;
+  flex: none;
+  align-self: center;
+  font-style: normal;
+}
+
+/* ----- 关闭动效：动效关闭时静止 ----- */
+body.no-motion-dream .ripple,
+body.no-motion-dream .mote,
+body.no-motion-dream .trace-mark,
+body.no-motion-dream .petal,
+body.no-motion-dream .dialog-entry,
+body.no-motion-dream .chat-msg,
+body.no-motion-dream .carry-marks,
+body.no-motion-dream .finale-question {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+/* 女声槽位单独处理：只停动画/过渡，槽位本身保留（--show 由 JS 控制显隐） */
+body.no-motion-dream .inner-voice {
+  animation: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+body.no-motion-dream .reader-page,
+body.no-motion-dream .reader-chapter,
+body.no-motion-dream .reader-chapterpage,
+body.no-motion-dream .reader-note,
+body.no-motion-dream .page-note,
+body.no-motion-dream .reader-line-vernacular {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+body.no-motion-dream .rchar::after {
+  transition: none;
+}
+body.no-motion-dream .rchar--read::after {
+  opacity: 1;
+}
+body.no-motion-dream .dream-respond,
+body.no-motion-dream .final-voice {
+  animation: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+body.no-motion-dream .scene-image {
+  animation: none !important;
+}
+
+/* ----- 减少动效偏好：尊重系统 ----- */
+@media (prefers-reduced-motion: reduce) {
+  .ripple, .mote, .trace-mark, .petal,
+  .dialog-entry,
+  .reader-page, .reader-chapter, .reader-chapterpage,
+  .reader-note, .page-note, .reader-line-vernacular,
+  .final-voice,
+  .carry-marks, .finale-question {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  /* 双声浮层保留右对齐 / 底部锚定的 transform，只停动画与过渡 */
+  .inner-voice, .dream-respond {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+  }
+  /* 场景图只去掉入场动画，保留本身的明暗（不强行提亮） */
+  .scene-image {
+    animation: none !important;
+  }
+}
